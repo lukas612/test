@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GymPro — Panel de Gestión</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="logo">
+        <span class="logo-icon">&#9651;</span>
+        <span class="logo-text">GymPro</span>
+      </div>
+      <button class="sidebar-toggle" id="sidebarToggle" aria-label="Cerrar menú">&#10005;</button>
+    </div>
+
+    <nav class="sidebar-nav">
+      <ul>
+        <li><a href="#" class="nav-link active" data-section="dashboard">
+          <span class="nav-icon">&#9632;</span> Dashboard
+        </a></li>
+        <li><a href="#" class="nav-link" data-section="members">
+          <span class="nav-icon">&#9632;</span> Miembros
+        </a></li>
+        <li><a href="#" class="nav-link" data-section="classes">
+          <span class="nav-icon">&#9632;</span> Clases
+        </a></li>
+        <li><a href="#" class="nav-link" data-section="payments">
+          <span class="nav-icon">&#9632;</span> Pagos
+        </a></li>
+        <li><a href="#" class="nav-link" data-section="staff">
+          <span class="nav-icon">&#9632;</span> Personal
+        </a></li>
+      </ul>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-profile">
+        <div class="avatar">AD</div>
+        <div class="user-info">
+          <span class="user-name">Admin</span>
+          <span class="user-role">Administrador</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <div class="main-wrapper">
+    <!-- Top Bar -->
+    <header class="topbar">
+      <button class="menu-btn" id="menuBtn" aria-label="Abrir menú">&#9776;</button>
+      <div class="topbar-title" id="topbarTitle">Dashboard</div>
+      <div class="topbar-actions">
+        <span class="date-display" id="dateDisplay"></span>
+        <button class="btn btn-primary" id="topbarActionBtn">+ Agregar</button>
+      </div>
+    </header>
+
+    <!-- Sections -->
+    <main class="content">
+
+      <!-- ===== DASHBOARD ===== -->
+      <section id="section-dashboard" class="section active">
+        <div class="section-header">
+          <h1>Resumen General</h1>
+          <p>Bienvenido al panel de gestión de tu gimnasio</p>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card stat-blue">
+            <div class="stat-info">
+              <span class="stat-label">Miembros Activos</span>
+              <span class="stat-value" id="statMembers">0</span>
+              <span class="stat-change positive">+12% este mes</span>
+            </div>
+            <div class="stat-icon">&#128100;</div>
+          </div>
+          <div class="stat-card stat-green">
+            <div class="stat-info">
+              <span class="stat-label">Ingresos del Mes</span>
+              <span class="stat-value" id="statRevenue">$0</span>
+              <span class="stat-change positive">+8% vs mes anterior</span>
+            </div>
+            <div class="stat-icon">&#128181;</div>
+          </div>
+          <div class="stat-card stat-purple">
+            <div class="stat-info">
+              <span class="stat-label">Clases Semanales</span>
+              <span class="stat-value" id="statClasses">0</span>
+              <span class="stat-change neutral">Sin cambios</span>
+            </div>
+            <div class="stat-icon">&#127947;</div>
+          </div>
+          <div class="stat-card stat-orange">
+            <div class="stat-info">
+              <span class="stat-label">Personal</span>
+              <span class="stat-value" id="statStaff">0</span>
+              <span class="stat-change positive">+1 este mes</span>
+            </div>
+            <div class="stat-icon">&#128119;</div>
+          </div>
+        </div>
+
+        <div class="dashboard-grid">
+          <!-- Recent Members -->
+          <div class="card">
+            <div class="card-header">
+              <h3>Miembros Recientes</h3>
+              <a href="#" class="link-small" data-section="members">Ver todos</a>
+            </div>
+            <div class="card-body">
+              <table class="mini-table" id="recentMembersTable">
+                <thead>
+                  <tr>
+                    <th>Nombre</th>
+                    <th>Plan</th>
+                    <th>Estado</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Today's Classes -->
+          <div class="card">
+            <div class="card-header">
+              <h3>Clases de Hoy</h3>
+              <a href="#" class="link-small" data-section="classes">Ver todas</a>
+            </div>
+            <div class="card-body" id="todayClasses"></div>
+          </div>
+
+          <!-- Monthly Revenue Chart (CSS-based) -->
+          <div class="card card-wide">
+            <div class="card-header">
+              <h3>Ingresos Mensuales</h3>
+              <span class="badge badge-green">2025</span>
+            </div>
+            <div class="card-body">
+              <div class="bar-chart" id="revenueChart"></div>
+              <div class="bar-labels" id="revenueLabels"></div>
+            </div>
+          </div>
+
+          <!-- Membership Distribution -->
+          <div class="card">
+            <div class="card-header">
+              <h3>Distribución de Planes</h3>
+            </div>
+            <div class="card-body" id="planDistribution"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== MEMBERS ===== -->
+      <section id="section-members" class="section">
+        <div class="section-header">
+          <h1>Gestión de Miembros</h1>
+          <p>Administra todos los socios del gimnasio</p>
+        </div>
+
+        <div class="toolbar">
+          <input type="text" class="search-input" id="memberSearch" placeholder="Buscar miembro..." />
+          <select class="filter-select" id="memberFilter">
+            <option value="">Todos los planes</option>
+            <option value="Básico">Básico</option>
+            <option value="Estándar">Estándar</option>
+            <option value="Premium">Premium</option>
+          </select>
+          <select class="filter-select" id="memberStatusFilter">
+            <option value="">Todos los estados</option>
+            <option value="Activo">Activo</option>
+            <option value="Inactivo">Inactivo</option>
+            <option value="Pendiente">Pendiente</option>
+          </select>
+        </div>
+
+        <div class="card">
+          <div class="card-body p0">
+            <table class="data-table" id="membersTable">
+              <thead>
+                <tr>
+                  <th>Miembro</th>
+                  <th>Email</th>
+                  <th>Teléfono</th>
+                  <th>Plan</th>
+                  <th>Vencimiento</th>
+                  <th>Estado</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== CLASSES ===== -->
+      <section id="section-classes" class="section">
+        <div class="section-header">
+          <h1>Clases y Horarios</h1>
+          <p>Programa y gestiona las clases del gimnasio</p>
+        </div>
+
+        <div class="toolbar">
+          <input type="text" class="search-input" id="classSearch" placeholder="Buscar clase..." />
+          <select class="filter-select" id="classDayFilter">
+            <option value="">Todos los días</option>
+            <option value="Lunes">Lunes</option>
+            <option value="Martes">Martes</option>
+            <option value="Miércoles">Miércoles</option>
+            <option value="Jueves">Jueves</option>
+            <option value="Viernes">Viernes</option>
+            <option value="Sábado">Sábado</option>
+            <option value="Domingo">Domingo</option>
+          </select>
+        </div>
+
+        <div class="classes-grid" id="classesGrid"></div>
+      </section>
+
+      <!-- ===== PAYMENTS ===== -->
+      <section id="section-payments" class="section">
+        <div class="section-header">
+          <h1>Pagos y Facturación</h1>
+          <p>Control de ingresos y estado de pagos</p>
+        </div>
+
+        <div class="stats-grid stats-small">
+          <div class="stat-card stat-green">
+            <div class="stat-info">
+              <span class="stat-label">Pagados este mes</span>
+              <span class="stat-value" id="payStatPaid">$0</span>
+            </div>
+            <div class="stat-icon">&#10003;</div>
+          </div>
+          <div class="stat-card stat-orange">
+            <div class="stat-info">
+              <span class="stat-label">Pendientes</span>
+              <span class="stat-value" id="payStatPending">$0</span>
+            </div>
+            <div class="stat-icon">&#8987;</div>
+          </div>
+          <div class="stat-card stat-red">
+            <div class="stat-info">
+              <span class="stat-label">Vencidos</span>
+              <span class="stat-value" id="payStatOverdue">$0</span>
+            </div>
+            <div class="stat-icon">&#33;</div>
+          </div>
+        </div>
+
+        <div class="toolbar">
+          <input type="text" class="search-input" id="paymentSearch" placeholder="Buscar pago..." />
+          <select class="filter-select" id="paymentStatusFilter">
+            <option value="">Todos los estados</option>
+            <option value="Pagado">Pagado</option>
+            <option value="Pendiente">Pendiente</option>
+            <option value="Vencido">Vencido</option>
+          </select>
+        </div>
+
+        <div class="card">
+          <div class="card-body p0">
+            <table class="data-table" id="paymentsTable">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Miembro</th>
+                  <th>Plan</th>
+                  <th>Monto</th>
+                  <th>Fecha</th>
+                  <th>Vencimiento</th>
+                  <th>Estado</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== STAFF ===== -->
+      <section id="section-staff" class="section">
+        <div class="section-header">
+          <h1>Personal del Gimnasio</h1>
+          <p>Gestión de entrenadores y empleados</p>
+        </div>
+
+        <div class="toolbar">
+          <input type="text" class="search-input" id="staffSearch" placeholder="Buscar personal..." />
+          <select class="filter-select" id="staffRoleFilter">
+            <option value="">Todos los roles</option>
+            <option value="Entrenador">Entrenador</option>
+            <option value="Recepción">Recepción</option>
+            <option value="Limpieza">Limpieza</option>
+            <option value="Gerente">Gerente</option>
+          </select>
+        </div>
+
+        <div class="staff-grid" id="staffGrid"></div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ===== MODAL ===== -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal" id="modal">
+      <div class="modal-header">
+        <h3 id="modalTitle">Agregar</h3>
+        <button class="modal-close" id="modalClose">&times;</button>
+      </div>
+      <div class="modal-body" id="modalBody"></div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="modalCancel">Cancelar</button>
+        <button class="btn btn-primary" id="modalConfirm">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notifications -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
