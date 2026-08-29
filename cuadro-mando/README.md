@@ -8,79 +8,92 @@ Dashboard de patrimonio personal (`index.html`, un único archivo autocontenido:
 HTML + CSS + JS vanilla, sin build step). Dos pestañas:
 
 - **Panel**: solo visualización (total, plusvalía latente/realizada/total,
-  espectro de liquidez, distribución por titular, distribución por producto).
+  espectro de liquidez, distribución por titular, distribución por producto,
+  evolución del patrimonio en el tiempo).
 - **Movimientos**: tipo de cambio, sincronización con Supabase, formulario de
   alta de inversiones, y tablas editables por categoría (Acciones, ETF, Indexa
-  Capital, Plan de Pensiones, Crowdfunding).
+  Capital, Crypto, Plan de Pensiones, Crowdfunding).
 
-Cada fila de inversión tiene: Titular (Lukas personal / Whitenut / Lovicka),
-Fecha, campos según categoría, Moneda (EUR/USD), Invertido, Valor actual,
-Vendido (checkbox) + Fecha venta + Importe venta (para separar ganancia
-latente de ganancia realizada).
+Cada fila de inversión tiene: Titular (Lukas personal / Lukas & Adriana /
+Whitenut / Lovicka), Fecha, campos según categoría, Moneda (EUR/USD),
+Invertido, Valor actual, Vendido (checkbox) + Fecha venta + Importe venta
+(para separar ganancia latente de ganancia realizada).
 
-## Backend: Supabase (datos — funciona)
+## Acceso — protegido con login
+
+El dashboard vive detrás de un login (Supabase Auth, email + contraseña).
+Sin iniciar sesión no se ve ni se descarga ningún dato: la pantalla de acceso
+tapa la página antes de que se pinte nada, y aunque alguien se saltara eso,
+las políticas RLS de la base de datos bloquean cualquier lectura/escritura
+que no venga autenticada como la cuenta autorizada.
+
+- Cuenta única compartida (Lukas + Adriana), email `lukas@lukasochoa.com`.
+- Backend: Supabase Auth (`sbClient.auth.signInWithPassword`), vía el SDK
+  `@supabase/supabase-js` cargado desde jsDelivr.
+- Botón "Cerrar sesión" en el footer de Movimientos.
+
+## Backend: Supabase
 
 - **Project ref**: `pnprzupnqpjqgtlqkrfd`
 - **Project URL**: `https://pnprzupnqpjqgtlqkrfd.supabase.co`
 - **anon/publishable key** (ya horneada dentro de `index.html`, es pública por
-  diseño): `sb_publishable_KtVZaVnSCuSNVJG5qlYlUg_WAiHOoOj`
-- **Tabla de datos**: `portfolio_holdings` — creada y en uso (RLS
-  desactivado a propósito, es una herramienta de un solo usuario). Columnas:
+  diseño): `sb_publishable_KtVZaVnSCuSNVJG5qlYlUg_WAiHOoOj`. Ya no basta por
+  sí sola para leer ni escribir nada — ver RLS abajo.
+- **Tabla de datos**: `portfolio_holdings`. Columnas:
   `categoria, titular, campo1, campo2, moneda, invertido, valor_actual, fecha,
   vencimiento, vendido, fecha_venta, importe_venta`.
-- El dashboard sincroniza en vivo contra esa tabla vía `fetch()` directo a la
-  REST API de PostgREST (`/rest/v1/portfolio_holdings`), con lógica en
-  `serializeRows()` / `deserializeRows()` / `supabaseGet()` / `supabasePost()`
-  dentro del `<script>` de `index.html`. Esta parte funciona sin cambios.
+  **RLS activado** — solo la cuenta autenticada autorizada
+  (`auth.uid() = '42175299-66d9-43d2-a3f3-d2b28c55e44f'`) puede leer o
+  escribir. El anon key por sí solo ya no obtiene nada (verificado: devuelve
+  `[]`).
+- **Tabla de histórico**: `portfolio_snapshots`
+  (`fecha` PK, `valor_total`, `invertido_total`, `plusvalia_latente`,
+  `plusvalia_realizada`, `breakdown` jsonb con desglose por categoría y
+  titular). Misma política RLS que `portfolio_holdings`. Cada vez que el
+  dashboard carga o guarda, hace upsert de la fila de hoy (`fecha` como clave,
+  `Prefer: resolution=merge-duplicates`) — así se acumula un punto por día
+  sin necesidad de ningún cron ni proceso aparte.
+- **`app_files`**: ya no se usa para servir nada (ver sección de hosting).
+  RLS activado sin ninguna política — completamente cerrada, ni lectura ni
+  escritura desde el cliente.
+- El dashboard sincroniza en vivo contra `portfolio_holdings` vía `fetch()`
+  directo a la REST API de PostgREST, con lógica en `serializeRows()` /
+  `deserializeRows()` / `supabaseGet()` / `supabasePost()` dentro del
+  `<script>` de `index.html`. Las cabeceras de autenticación (`authHeaders()`)
+  usan el `access_token` de la sesión activa, no la anon key a secas.
 
-## Servir el dashboard como página web real — resuelto, pero no como se planeó
+## Hosting: GitHub Pages
 
-El plan original (tabla `app_files` + Edge Function `dashboard` sirviendo
-`text/html`) **no es viable en Supabase**, y no era un problema de ejecución:
-es una restricción de la plataforma. Verificado en producción:
+El plan original (tabla `app_files` + Edge Function sirviendo `text/html`)
+**no es viable en Supabase** — no es un problema de ejecución, es una
+restricción de plataforma confirmada en producción: tanto Edge Functions
+como Storage público reescriben cualquier respuesta HTML a `text/plain` en
+el dominio compartido `*.supabase.co` (protección anti-phishing; solo se
+evita con un dominio propio de pago). El contenido de referencia se dejó en
+`app_files`/Edge Function por si algún día hay dominio propio, pero no es la
+URL a usar.
 
-- Confirmado en la documentación de Supabase: *"HTML content is not
-  supported. GET requests that return `text/html` will be rewritten to
-  `text/plain`. Edge Functions are designed for APIs and data processing,
-  not serving web pages."*
-- Se probó también subiendo `index.html` a un bucket público de Supabase
-  Storage (`/storage/v1/object/public/...`): incluso ahí, el dominio
-  compartido `*.supabase.co` reescribe el `Content-Type` a `text/plain` y
-  añade `Content-Security-Policy: default-src 'none'; sandbox`. Es una
-  protección anti-phishing a nivel de dominio compartido, no algo que se
-  pueda desactivar sin un dominio propio (custom domain, de pago).
-- Se dejó insertado el contenido real de `index.html` en la tabla
-  `app_files` (name='dashboard') y la Edge Function `dashboard` desplegada
-  leyendo de ahí — funciona igual de bien que cualquier otra alternativa,
-  pero **sirve el HTML como texto plano, no renderizado**. Se mantiene por
-  si en el futuro Supabase soporta un dominio propio; no borrarlo no cuesta
-  nada, pero no es la URL a usar.
-- El intento de bucket público (`site`) en Storage se revirtió por completo:
-  objeto borrado, políticas de escritura/lectura pública eliminadas. Queda
-  un registro de bucket vacío y sin políticas que no se pudo eliminar sin la
-  `service_role` key (protegido por Supabase contra borrado accidental) —
-  inofensivo, no expone nada.
+El dashboard se sirve como página estática real desde `docs/index.html` vía
+GitHub Pages, ya configurado: **https://lukas612.github.io/test/**
+(Source: rama `claude/cuadro-mando-handoff-4t0j3b`, carpeta `/docs`).
 
-### Solución real: GitHub Pages
+## Novedades sobre la versión inicial
 
-Este repo (`lukas612/test`) ya está conectado. El dashboard está publicado
-como copia estática en `docs/index.html` (más `docs/.nojekyll` para que
-GitHub no lo procese con Jekyll).
-
-**Falta un solo paso manual** (no hay API de GitHub Pages en las
-herramientas disponibles para Claude Code en este entorno): en el repo, ir a
-**Settings → Pages** y configurar:
-- Source: `Deploy from a branch`
-- Branch: la rama donde vive `docs/` (esta rama, o la rama por defecto tras
-  hacer merge) + carpeta `/docs`
-
-Tras eso, la URL pública será algo como
-`https://lukas612.github.io/test/`.
-
-Si se prefiere no depender de GitHub Pages, la otra opción real es contratar
-un dominio propio y usar el [custom domain de
-Supabase](https://supabase.com/docs/guides/platform/custom-domains) — de
-pago, no configurado aquí.
+- **Login obligatorio** (ver arriba) — antes cualquiera con la URL y la anon
+  key tenía lectura/escritura total; ahora hace falta la cuenta autorizada.
+- **Nuevo titular**: "Lukas & Adriana" (titularidad conjunta), junto a Lukas
+  personal, Whitenut y Lovicka.
+- **Nueva categoría**: Crypto (Activo + Exchange/Wallet), contabilizada como
+  líquida en el espectro de liquidez.
+- **Evolución del patrimonio**: gráfico de línea en el Panel con el histórico
+  de `valor_total` guardado en `portfolio_snapshots`. Con menos de 2 puntos
+  muestra un aviso de "aún no hay histórico" en vez de un gráfico vacío.
+- El panel "Sincronización con Supabase" ya no permite pegar una URL/clave a
+  mano (ya no tenía sentido con RLS atado a una cuenta fija); solo queda
+  "Sincronizar ahora".
+- El fallback de guardado local pasó de `window.storage` (una API que solo
+  existe dentro del entorno de artifacts de claude.ai, nunca funcionó fuera
+  de ahí) a `localStorage` real del navegador.
 
 ## Seguridad — pendiente de tu parte
 
@@ -88,11 +101,8 @@ pago, no configurado aquí.
   `service_role`) que apareció en texto plano en un chat de claude.ai.
   **Revócala/regenérala** en Project Settings → API Keys si no lo has hecho
   ya — Claude Code no la ha usado ni la tiene.
-- El `anon/publishable key` que sí está en `index.html` es seguro de exponer
-  en cliente por diseño (es pública), pero como la tabla `portfolio_holdings`
-  tiene RLS desactivado, esa clave permite lectura y escritura completas sobre
-  esa tabla. Aceptable para una herramienta personal de un solo usuario; no
-  la subas a ningún sitio realmente público.
+- Cambia la contraseña de login si la compartiste por un canal que no
+  quieras que quede como el definitivo.
 
 ## Migración previa (contexto)
 

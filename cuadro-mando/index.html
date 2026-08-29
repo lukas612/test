@@ -14,8 +14,7 @@
     --bg: #14171C; --surface: #1F252D; --surface-2: #262D37; --line: #333B46;
     --ink: #ECE8DF; --ink-dim: #9AA2AC; --ink-faint: #626B76;
     --gold: #C9A227; --gold-dim: #8C7222; --positive: #5FA37A; --negative: #C1584F;
-    --c-acciones: #5FA37A; --c-etf: #4A8CA6; --c-indexa: #C9A227; --c-pensiones: #8E7FC0; --c-crowdfunding: #C08A3E;
-    --v-lukas: #7FA7C9; --v-whitenut: #9BA6B4; --v-lovicka: #C9A227;
+    --c-acciones: #5FA37A; --c-etf: #4A8CA6; --c-indexa: #C9A227; --c-crypto: #C2617E; --c-pensiones: #8E7FC0; --c-crowdfunding: #C08A3E;
   }
   * { box-sizing: border-box; }
   html, body { margin:0; padding:0; }
@@ -75,9 +74,6 @@
   .spectrum .seg.liquido{ background: var(--c-acciones); }
   .spectrum .seg.jubilacion{ background: var(--c-pensiones); }
   .spectrum .seg.plazo{ background: var(--c-crowdfunding); }
-  .spectrum .seg.lukas{ background: var(--v-lukas); }
-  .spectrum .seg.whitenut{ background: var(--v-whitenut); }
-  .spectrum .seg.lovicka{ background: var(--v-lovicka); }
   .spectrum-legend{ display:flex; flex-wrap:wrap; gap: 22px; margin-top: 14px; }
   .spec-item{ display:flex; align-items:flex-start; gap:9px; min-width: 170px; }
   .spec-dot{ width:10px; height:10px; border-radius:2px; margin-top:4px; flex-shrink:0; }
@@ -154,10 +150,34 @@
     #sheetsUrl{ min-width: 100%; }
   }
   @media (prefers-reduced-motion: reduce){ .spectrum .seg{ transition: none; } }
+
+  .auth-gate{ position:fixed; inset:0; background:var(--bg); display:flex; align-items:center; justify-content:center; z-index:1000; padding:20px; }
+  .auth-box{ width:100%; max-width:320px; background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:26px 24px; }
+  .auth-box .field{ margin-bottom:14px; }
+  .auth-box .btn{ width:100%; text-align:center; margin-top:4px; }
+  .auth-error{ font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--negative); margin-top:12px; min-height:14px; }
+
+  .evo-block{ position:relative; }
+  .evo-svg{ width:100%; height:180px; display:block; }
+  .evo-area{ fill: rgba(201,162,39,0.14); stroke:none; }
+  .evo-line{ fill:none; stroke: var(--gold); stroke-width:2; }
+  .evo-labels{ display:flex; justify-content:space-between; font-family:'IBM Plex Mono', monospace; font-size:11.5px; color: var(--ink-faint); margin-top:8px; }
+  .chart-empty{ font-family:'IBM Plex Mono', monospace; font-size:12.5px; color: var(--ink-faint); padding:20px 0; text-align:center; }
 </style>
 </head>
 <body>
-<div class="wrap">
+
+<div class="auth-gate" id="authGate">
+  <div class="auth-box">
+    <p class="eyebrow">Cuadro de Mando · Acceso</p>
+    <div class="field"><label>Email</label><input id="authEmail" type="email" autocomplete="username"></div>
+    <div class="field"><label>Contraseña</label><input id="authPassword" type="password" autocomplete="current-password"></div>
+    <button class="btn primary" id="authSubmit">Entrar</button>
+    <div class="auth-error" id="authError"></div>
+  </div>
+</div>
+
+<div class="wrap" id="appRoot" style="display:none">
 
   <p class="eyebrow">Cuadro de Mando · Patrimonio de Inversión</p>
 
@@ -222,22 +242,8 @@
 
     <div class="spectrum-block">
       <p class="section-label">Distribución por titular</p>
-      <div class="spectrum">
-        <div class="seg lukas" id="segLukas"></div>
-        <div class="seg whitenut" id="segWhitenut"></div>
-        <div class="seg lovicka" id="segLovicka"></div>
-      </div>
-      <div class="spectrum-legend">
-        <div class="spec-item"><div class="spec-dot" style="background:var(--v-lukas)"></div>
-          <div><div class="t">Lukas personal</div><div class="d" id="vehLukasTxt">€0 · 0%</div>
-          <div class="note">Titularidad directa (IRPF)</div></div></div>
-        <div class="spec-item"><div class="spec-dot" style="background:var(--v-whitenut)"></div>
-          <div><div class="t">Whitenut</div><div class="d" id="vehWhitenutTxt">€0 · 0%</div>
-          <div class="note">Holding española (Whitenut SLU)</div></div></div>
-        <div class="spec-item"><div class="spec-dot" style="background:var(--v-lovicka)"></div>
-          <div><div class="t">Lovicka</div><div class="d" id="vehLovickaTxt">€0 · 0%</div>
-          <div class="note">Holding panameña (Lovicka SA)</div></div></div>
-      </div>
+      <div class="spectrum" id="specTitular"></div>
+      <div class="spectrum-legend" id="specTitularLegend"></div>
     </div>
 
     <p class="section-label">Distribución por producto</p>
@@ -248,6 +254,9 @@
       </div>
       <div class="legend" id="legend"></div>
     </div>
+
+    <p class="section-label">Evolución del patrimonio</p>
+    <div class="panel evo-block" id="evolutionChart"><div class="chart-empty">Cargando histórico…</div></div>
 
   </div>
 
@@ -266,13 +275,9 @@
     <div class="panel">
       <p class="panel-title">Sincronización con Supabase</p>
       <div class="sync-row">
-        <input id="sbUrl" type="text" placeholder="Project URL (https://xxxx.supabase.co)" value="https://pnprzupnqpjqgtlqkrfd.supabase.co">
-        <input id="sbKey" type="password" placeholder="anon public API key" value="sb_publishable_KtVZaVnSCuSNVJG5qlYlUg_WAiHOoOj">
-        <button class="btn primary" id="connectBtn">Conectar</button>
         <button class="btn" id="syncNowBtn">Sincronizar ahora</button>
-        <button class="btn" id="disconnectBtn">Desconectar</button>
       </div>
-      <div class="sync-status" id="syncStatus">Sin conectar — usando guardado local de Claude</div>
+      <div class="sync-status" id="syncStatus">Conectando…</div>
     </div>
 
     <div class="panel" id="addFormPanel">
@@ -296,6 +301,7 @@
 
     <div class="footer">
       <span id="saveStatus">Guardado automático activado</span>
+      <button class="btn" id="logoutBtn">Cerrar sesión</button>
       <button class="reset-btn" id="resetBtn">Restablecer plantilla</button>
     </div>
 
@@ -303,21 +309,24 @@
 
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
 (function(){
   const VEHS = [
-    { key:'lukas', label:'Lukas personal' },
-    { key:'whitenut', label:'Whitenut' },
-    { key:'lovicka', label:'Lovicka' },
+    { key:'lukas', label:'Lukas personal', hex:'#7FA7C9', note:'Titularidad directa (IRPF)' },
+    { key:'lukas_adriana', label:'Lukas & Adriana', hex:'#D98C5F', note:'Titularidad conjunta' },
+    { key:'whitenut', label:'Whitenut', hex:'#9BA6B4', note:'Holding española (Whitenut SLU)' },
+    { key:'lovicka', label:'Lovicka', hex:'#C9A227', note:'Holding panameña (Lovicka SA)' },
   ];
   const CATS = [
     { key:'acciones', label:'Acciones', color:'var(--c-acciones)', hex:'#5FA37A', cols:[['a','Activo'],['b','Broker']] },
     { key:'etf', label:'ETF', color:'var(--c-etf)', hex:'#4A8CA6', cols:[['a','Activo'],['b','Broker']] },
     { key:'indexa', label:'Indexa Capital', color:'var(--c-indexa)', hex:'#C9A227', cols:[['a','Concepto']] },
+    { key:'crypto', label:'Crypto', color:'var(--c-crypto)', hex:'#C2617E', cols:[['a','Activo'],['b','Exchange/Wallet']] },
     { key:'pensiones', label:'Plan de Pensiones', color:'var(--c-pensiones)', hex:'#8E7FC0', cols:[['a','Plan'],['b','Entidad']] },
     { key:'crowdfunding', label:'Crowdfunding', color:'var(--c-crowdfunding)', hex:'#C08A3E', cols:[['a','Proyecto'],['b','Plataforma']], hasDate:true },
   ];
-  const LIQ_MAP = { liquido:['acciones','etf','indexa'], jubilacion:['pensiones'], plazo:['crowdfunding'] };
+  const LIQ_MAP = { liquido:['acciones','etf','indexa','crypto'], jubilacion:['pensiones'], plazo:['crowdfunding'] };
   const ROW_HEADERS = ['categoria','titular','campo1','campo2','moneda','invertido','valorActual','fecha','vencimiento','vendido','fechaVenta','importeVenta'];
 
   function todayISO(){ return new Date().toISOString().slice(0,10); }
@@ -346,10 +355,19 @@
     key: 'sb_publishable_KtVZaVnSCuSNVJG5qlYlUg_WAiHOoOj'
   };
   const SUPABASE_TABLE = 'portfolio_holdings';
+  const SUPABASE_SNAPSHOTS_TABLE = 'portfolio_snapshots';
+
+  const sbClient = supabase.createClient(DEFAULT_SUPABASE_CONFIG.url, DEFAULT_SUPABASE_CONFIG.key);
 
   let state = defaultState();
-  let supabaseConfig = null;
+  let supabaseConfig = DEFAULT_SUPABASE_CONFIG;
+  let currentSession = null;
   let saveTimer = null;
+
+  function authHeaders(){
+    const token = (currentSession && currentSession.access_token) ? currentSession.access_token : supabaseConfig.key;
+    return { apikey: supabaseConfig.key, Authorization: 'Bearer ' + token };
+  }
 
   function fmtEUR(n, decimals){
     decimals = decimals === undefined ? 0 : decimals;
@@ -365,8 +383,9 @@
     return { inv, val, pl: val-inv, plPct: inv>0 ? ((val-inv)/inv*100) : 0 };
   }
   function vehTotals(){
-    const out = { lukas:0, whitenut:0, lovicka:0 };
-    CATS.forEach(c=>{ (state[c.key]||[]).forEach(r=>{ if(r.vendido) return; out[r.veh||'lukas'] += toEUR(r.val, r.cur); }); });
+    const out = {};
+    VEHS.forEach(v=>{ out[v.key] = 0; });
+    CATS.forEach(c=>{ (state[c.key]||[]).forEach(r=>{ if(r.vendido) return; out[r.veh||VEHS[0].key] += toEUR(r.val, r.cur); }); });
     return out;
   }
   function realizedTotals(){
@@ -433,15 +452,25 @@
     document.getElementById('liqPlazoTxt').textContent = fmtEUR(lt.plazo) + ' · ' + pPlazo.toFixed(0) + '%';
 
     const vt = vehTotals();
-    const pLukas = vt.lukas/totalVal*100, pWhitenut = vt.whitenut/totalVal*100, pLovicka = vt.lovicka/totalVal*100;
-    requestAnimationFrame(()=>{
-      document.getElementById('segLukas').style.width = pLukas + '%';
-      document.getElementById('segWhitenut').style.width = pWhitenut + '%';
-      document.getElementById('segLovicka').style.width = pLovicka + '%';
+    const specSegEl = document.getElementById('specTitular');
+    const specLegendEl = document.getElementById('specTitularLegend');
+    specSegEl.innerHTML = '';
+    specLegendEl.innerHTML = '';
+    VEHS.forEach(v=>{
+      const val = vt[v.key] || 0;
+      const pct = totalVal>0 ? (val/totalVal*100) : 0;
+      const seg = document.createElement('div');
+      seg.className = 'seg';
+      seg.style.background = v.hex;
+      specSegEl.appendChild(seg);
+      requestAnimationFrame(()=>{ seg.style.width = pct + '%'; });
+      const item = document.createElement('div');
+      item.className = 'spec-item';
+      item.innerHTML = '<div class="spec-dot" style="background:'+v.hex+'"></div>' +
+        '<div><div class="t">'+v.label+'</div><div class="d">'+fmtEUR(val)+' · '+pct.toFixed(0)+'%</div>' +
+        (v.note ? '<div class="note">'+v.note+'</div>' : '') + '</div>';
+      specLegendEl.appendChild(item);
     });
-    document.getElementById('vehLukasTxt').textContent = fmtEUR(vt.lukas) + ' · ' + pLukas.toFixed(0) + '%';
-    document.getElementById('vehWhitenutTxt').textContent = fmtEUR(vt.whitenut) + ' · ' + pWhitenut.toFixed(0) + '%';
-    document.getElementById('vehLovickaTxt').textContent = fmtEUR(vt.lovicka) + ' · ' + pLovicka.toFixed(0) + '%';
 
     let cum = 0; const stops = [];
     const legendEl = document.getElementById('legend');
@@ -646,7 +675,7 @@
   }
   async function supabaseGet(){
     const res = await fetch(supabaseConfig.url + '/rest/v1/' + SUPABASE_TABLE + '?select=*', {
-      headers: { apikey: supabaseConfig.key, Authorization: 'Bearer ' + supabaseConfig.key }
+      headers: authHeaders()
     });
     if(!res.ok){ throw new Error('HTTP ' + res.status); }
     const rows = await res.json();
@@ -655,16 +684,13 @@
   async function supabasePost(rows){
     const delRes = await fetch(supabaseConfig.url + '/rest/v1/' + SUPABASE_TABLE + '?id=gte.0', {
       method:'DELETE',
-      headers: { apikey: supabaseConfig.key, Authorization: 'Bearer ' + supabaseConfig.key }
+      headers: authHeaders()
     });
     if(!delRes.ok){ throw new Error('HTTP ' + delRes.status + ' al borrar'); }
     const payload = rows.map(toDbRow);
     const insRes = await fetch(supabaseConfig.url + '/rest/v1/' + SUPABASE_TABLE, {
       method:'POST',
-      headers: {
-        apikey: supabaseConfig.key, Authorization: 'Bearer ' + supabaseConfig.key,
-        'Content-Type': 'application/json', Prefer: 'return=minimal'
-      },
+      headers: Object.assign({}, authHeaders(), { 'Content-Type': 'application/json', Prefer: 'return=minimal' }),
       body: JSON.stringify(payload)
     });
     if(!insRes.ok){ throw new Error('HTTP ' + insRes.status + ' al insertar'); }
@@ -675,14 +701,71 @@
     el.textContent = msg;
     el.className = 'sync-status' + (kind ? ' '+kind : '');
   }
-  async function saveConfig(cfg){ supabaseConfig = cfg; try{ await window.storage.set('supabase-config', JSON.stringify(cfg), false); }catch(e){} }
+
+  async function maybeSaveSnapshot(){
+    const g = grandTotals();
+    const rt = realizedTotals();
+    const breakdown = {
+      categorias: Object.fromEntries(CATS.map(c => [c.key, catTotals(c.key).val])),
+      titulares: vehTotals()
+    };
+    try{
+      await fetch(supabaseConfig.url + '/rest/v1/' + SUPABASE_SNAPSHOTS_TABLE, {
+        method: 'POST',
+        headers: Object.assign({}, authHeaders(), { 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates,return=minimal' }),
+        body: JSON.stringify([{
+          fecha: todayISO(), valor_total: g.val, invertido_total: g.inv,
+          plusvalia_latente: g.pl, plusvalia_realizada: rt.gain, breakdown
+        }])
+      });
+    }catch(e){ /* no bloquea el resto de la app si falla */ }
+  }
+
+  async function loadSnapshots(){
+    try{
+      const res = await fetch(supabaseConfig.url + '/rest/v1/' + SUPABASE_SNAPSHOTS_TABLE + '?select=fecha,valor_total&order=fecha.asc', {
+        headers: authHeaders()
+      });
+      if(!res.ok) return [];
+      return await res.json();
+    }catch(e){ return []; }
+  }
+
+  function renderEvolutionChart(snapshots){
+    const container = document.getElementById('evolutionChart');
+    if(!container) return;
+    if(!snapshots || snapshots.length < 2){
+      container.innerHTML = '<div class="chart-empty">Aún no hay suficiente histórico — vuelve otro día para ver la evolución.</div>';
+      return;
+    }
+    const W = 760, H = 180, PAD = 20;
+    const values = snapshots.map(s=>Number(s.valor_total)||0);
+    const min = Math.min.apply(null, values), max = Math.max.apply(null, values);
+    const range = (max - min) || 1;
+    const stepX = (W - PAD*2) / (values.length - 1);
+    const points = values.map((v,i)=>{
+      const x = PAD + i*stepX;
+      const y = H - PAD - ((v - min)/range) * (H - PAD*2);
+      return [x, y];
+    });
+    const linePath = points.map((p,i)=> (i===0?'M':'L') + p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' ');
+    const areaPath = linePath + ' L' + points[points.length-1][0].toFixed(1) + ',' + (H-PAD) + ' L' + points[0][0].toFixed(1) + ',' + (H-PAD) + ' Z';
+    container.innerHTML =
+      '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" class="evo-svg">' +
+        '<path d="'+areaPath+'" class="evo-area"></path>' +
+        '<path d="'+linePath+'" class="evo-line"></path>' +
+      '</svg>' +
+      '<div class="evo-labels"><span>'+snapshots[0].fecha+' · '+fmtEUR(values[0])+'</span><span>'+snapshots[snapshots.length-1].fecha+' · '+fmtEUR(values[values.length-1])+'</span></div>';
+  }
 
   async function persist(){
     document.getElementById('saveStatus').textContent = 'Guardando…';
-    try{ await window.storage.set('portfolio-data', JSON.stringify(state), false); }catch(e){}
-    if(supabaseConfig && supabaseConfig.url && supabaseConfig.key){
+    try{ localStorage.setItem('portfolio-data', JSON.stringify(state)); }catch(e){}
+    if(currentSession){
       try{
         await supabasePost(serializeRows());
+        await maybeSaveSnapshot();
+        loadSnapshots().then(renderEvolutionChart);
         setSyncStatus('Sincronizado con Supabase · ' + new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}), 'ok');
       }catch(e){ setSyncStatus('Guardado local — error al sincronizar con Supabase (' + e.message + ')', 'err'); }
     }
@@ -691,74 +774,68 @@
   function scheduleSave(){ clearTimeout(saveTimer); saveTimer = setTimeout(persist, 600); }
 
   async function loadState(){
-    try{
-      const res = await window.storage.get('supabase-config', false);
-      if(res && res.value) supabaseConfig = JSON.parse(res.value);
-    }catch(e){}
-    if(!supabaseConfig || !supabaseConfig.url || !supabaseConfig.key){
-      supabaseConfig = (DEFAULT_SUPABASE_CONFIG.url && DEFAULT_SUPABASE_CONFIG.key) ? DEFAULT_SUPABASE_CONFIG : null;
-    }
-    if(supabaseConfig){
-      document.getElementById('sbUrl').value = supabaseConfig.url || '';
-      document.getElementById('sbKey').value = supabaseConfig.key || '';
-    }
     let loaded = false;
-    if(supabaseConfig && supabaseConfig.url && supabaseConfig.key){
-      try{
-        setSyncStatus('Conectando con Supabase…');
-        const rows = await supabaseGet();
-        if(rows && rows.length){ state = deserializeRows(rows); loaded = true; }
-        setSyncStatus('Sincronizado con Supabase', 'ok');
-      }catch(e){ setSyncStatus('No se pudo conectar con Supabase (' + e.message + ') — usando copia local', 'err'); }
-    }
+    try{
+      setSyncStatus('Conectando con Supabase…');
+      const rows = await supabaseGet();
+      if(rows && rows.length){ state = deserializeRows(rows); loaded = true; }
+      setSyncStatus('Sincronizado con Supabase', 'ok');
+    }catch(e){ setSyncStatus('No se pudo conectar con Supabase (' + e.message + ') — usando copia local', 'err'); }
     if(!loaded){
       try{
-        const res = await window.storage.get('portfolio-data', false);
-        if(res && res.value){ state = Object.assign(defaultState(), JSON.parse(res.value)); }
+        const raw = localStorage.getItem('portfolio-data');
+        if(raw){ state = Object.assign(defaultState(), JSON.parse(raw)); }
       }catch(e){}
     }
     document.getElementById('fxRate').value = state.fx;
     buildCards();
     renderSummary();
+    await maybeSaveSnapshot();
+    loadSnapshots().then(renderEvolutionChart);
   }
 
-  document.getElementById('connectBtn').addEventListener('click', async ()=>{
-    const url = document.getElementById('sbUrl').value.trim().replace(/\/+$/,'');
-    const key = document.getElementById('sbKey').value.trim();
-    if(!url || !key){ setSyncStatus('Introduce el Project URL y la anon key antes de conectar', 'err'); return; }
-    await saveConfig({ url, key });
-    setSyncStatus('Conectando…');
-    try{
-      const rows = await supabaseGet();
-      if(rows && rows.length){
-        if(confirm('Supabase ya tiene datos. Aceptar = cargarlos aquí (sobrescribe este panel). Cancelar = subir los datos actuales del panel a Supabase (sobrescribe la tabla).')){
-          state = deserializeRows(rows);
-          document.getElementById('fxRate').value = state.fx;
-          buildCards(); renderSummary();
-        } else { await supabasePost(serializeRows()); }
-      } else { await supabasePost(serializeRows()); }
-      setSyncStatus('Conectado y sincronizado con Supabase', 'ok');
-    }catch(e){ setSyncStatus('Error al conectar (' + e.message + ')', 'err'); }
-  });
-
   document.getElementById('syncNowBtn').addEventListener('click', async ()=>{
-    if(!supabaseConfig || !supabaseConfig.url){ setSyncStatus('Conecta primero Supabase', 'err'); return; }
     setSyncStatus('Sincronizando…');
     try{
       const rows = await supabaseGet();
       state = deserializeRows(rows);
       document.getElementById('fxRate').value = state.fx;
       buildCards(); renderSummary();
+      loadSnapshots().then(renderEvolutionChart);
       setSyncStatus('Datos actualizados desde Supabase', 'ok');
     }catch(e){ setSyncStatus('Error al sincronizar (' + e.message + ')', 'err'); }
   });
 
-  document.getElementById('disconnectBtn').addEventListener('click', async ()=>{
-    supabaseConfig = null;
-    try{ await window.storage.delete('supabase-config', false); }catch(e){}
-    document.getElementById('sbUrl').value = '';
-    document.getElementById('sbKey').value = '';
-    setSyncStatus('Desconectado — usando guardado local de Claude');
+  function showApp(){
+    document.getElementById('authGate').style.display = 'none';
+    document.getElementById('appRoot').style.display = '';
+  }
+  function showAuthGate(msg){
+    document.getElementById('appRoot').style.display = 'none';
+    document.getElementById('authGate').style.display = 'flex';
+    document.getElementById('authError').textContent = msg || '';
+  }
+
+  async function handleSignIn(){
+    const email = document.getElementById('authEmail').value.trim();
+    const password = document.getElementById('authPassword').value;
+    if(!email || !password){ document.getElementById('authError').textContent = 'Introduce email y contraseña.'; return; }
+    document.getElementById('authError').textContent = '';
+    try{
+      const { data, error } = await sbClient.auth.signInWithPassword({ email, password });
+      if(error || !data.session){ document.getElementById('authError').textContent = 'Credenciales incorrectas.'; return; }
+      currentSession = data.session;
+      showApp();
+      await loadState();
+    }catch(e){ document.getElementById('authError').textContent = 'Error al conectar con Supabase.'; }
+  }
+  document.getElementById('authSubmit').addEventListener('click', handleSignIn);
+  document.getElementById('authPassword').addEventListener('keydown', (e)=>{ if(e.key === 'Enter') handleSignIn(); });
+
+  document.getElementById('logoutBtn').addEventListener('click', async ()=>{
+    try{ await sbClient.auth.signOut(); }catch(e){}
+    currentSession = null;
+    showAuthGate();
   });
 
   document.addEventListener('input', (e)=>{
@@ -812,7 +889,20 @@
     }
   });
 
-  loadState();
+  async function checkSessionAndStart(){
+    try{
+      const { data } = await sbClient.auth.getSession();
+      if(data && data.session){
+        currentSession = data.session;
+        showApp();
+        await loadState();
+        return;
+      }
+    }catch(e){}
+    showAuthGate();
+  }
+
+  checkSessionAndStart();
 })();
 </script>
 </body>
