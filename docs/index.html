@@ -14,7 +14,7 @@
     --bg: #14171C; --surface: #1F252D; --surface-2: #262D37; --line: #333B46;
     --ink: #ECE8DF; --ink-dim: #9AA2AC; --ink-faint: #626B76;
     --gold: #C9A227; --gold-dim: #8C7222; --positive: #5FA37A; --negative: #C1584F;
-    --c-acciones: #5FA37A; --c-etf: #4A8CA6; --c-indexa: #C9A227; --c-crypto: #C2617E; --c-efectivo: #B5A889; --c-pensiones: #8E7FC0; --c-crowdfunding: #C08A3E;
+    --c-acciones: #5FA37A; --c-etf: #4A8CA6; --c-indexa: #C9A227; --c-crypto: #C2617E; --c-efectivo: #B5A889; --c-pensiones: #8E7FC0; --c-crowdfunding: #C08A3E; --c-inmuebles: #8C7A66;
   }
   * { box-sizing: border-box; }
   html, body { margin:0; padding:0; }
@@ -121,9 +121,9 @@
   thead th.num{ text-align:right; }
   tbody td{ padding: 5px 6px; border-bottom: 1px solid rgba(51,59,70,0.5); vertical-align:middle;}
   tbody tr:last-child td{ border-bottom:none; }
-  input.cell, select.cell{ background: transparent; border:none; color: var(--ink); font-family:'Inter', sans-serif; font-size: 13px; width: 100%; padding: 5px 4px; border-radius:4px; }
+  input.cell, select.cell, input.ledgercell{ background: transparent; border:none; color: var(--ink); font-family:'Inter', sans-serif; font-size: 13px; width: 100%; padding: 5px 4px; border-radius:4px; }
   select.cell{ font-family:'IBM Plex Mono', monospace; font-size: 12px; }
-  input.cell:focus, select.cell:focus{ background: var(--surface-2); }
+  input.cell:focus, select.cell:focus, input.ledgercell:focus{ background: var(--surface-2); }
   input.num{ font-family:'IBM Plex Mono', monospace; text-align:right; }
   input.date{ font-family:'IBM Plex Mono', monospace; color: var(--ink-dim); }
   td.num{ text-align:right; width: 105px; }
@@ -131,10 +131,10 @@
   td.fecha{ width: 130px; }
   td.eur{ text-align:right; width:105px; color: var(--ink-dim); font-family:'IBM Plex Mono', monospace; font-size:12.5px; }
   td.del{ width: 28px; text-align:center; }
-  .del-btn{ background:none; border:none; color: var(--ink-faint); cursor:pointer; font-size:15px; line-height:1; padding: 4px 6px; border-radius:4px; }
-  .del-btn:hover{ color: var(--negative); background: rgba(193,88,79,0.1); }
-  .add-row{ margin-top: 10px; background: none; border: 1px dashed var(--line); color: var(--ink-dim); font-family:'IBM Plex Mono', monospace; font-size: 12px; padding: 7px 12px; border-radius:6px; cursor:pointer; width:100%; }
-  .add-row:hover{ border-color: var(--gold-dim); color: var(--gold); }
+  .del-btn, .del-btn-prop{ background:none; border:none; color: var(--ink-faint); cursor:pointer; font-size:15px; line-height:1; padding: 4px 6px; border-radius:4px; }
+  .del-btn:hover, .del-btn-prop:hover{ color: var(--negative); background: rgba(193,88,79,0.1); }
+  .add-row, .add-row-prop{ margin-top: 10px; background: none; border: 1px dashed var(--line); color: var(--ink-dim); font-family:'IBM Plex Mono', monospace; font-size: 12px; padding: 7px 12px; border-radius:6px; cursor:pointer; width:100%; }
+  .add-row:hover, .add-row-prop:hover{ border-color: var(--gold-dim); color: var(--gold); }
 
   .footer{ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-top: 34px; padding-top: 18px; border-top: 1px solid var(--line); font-family:'IBM Plex Mono', monospace; font-size: 11.5px; color: var(--ink-faint); }
   .reset-btn{ background:none; border:1px solid var(--line); color: var(--ink-dim); padding:7px 14px; border-radius: 6px; font-family:'IBM Plex Mono', monospace; font-size: 11.5px; cursor:pointer; }
@@ -184,6 +184,7 @@
   <div class="tabs">
     <button class="tab-btn active" data-view="viewPanel">Panel</button>
     <button class="tab-btn" data-view="viewMovimientos">Movimientos</button>
+    <button class="tab-btn" data-view="viewInmuebles">Inmuebles</button>
   </div>
 
   <!-- ================= PANEL (visualización) ================= -->
@@ -222,22 +223,8 @@
 
     <div class="spectrum-block">
       <p class="section-label">Espectro de liquidez</p>
-      <div class="spectrum">
-        <div class="seg liquido" id="segLiquido"></div>
-        <div class="seg jubilacion" id="segJubilacion"></div>
-        <div class="seg plazo" id="segPlazo"></div>
-      </div>
-      <div class="spectrum-legend">
-        <div class="spec-item"><div class="spec-dot" style="background:var(--c-acciones)"></div>
-          <div><div class="t">Líquido</div><div class="d" id="liqLiquidoTxt">€0 · 0%</div>
-          <div class="note">Acciones, ETF e Indexa — disponible en días</div></div></div>
-        <div class="spec-item"><div class="spec-dot" style="background:var(--c-pensiones)"></div>
-          <div><div class="t">Bloqueado · jubilación</div><div class="d" id="liqJubTxt">€0 · 0%</div>
-          <div class="note">Plan de pensiones — solo rescatable en supuestos legales</div></div></div>
-        <div class="spec-item"><div class="spec-dot" style="background:var(--c-crowdfunding)"></div>
-          <div><div class="t">Bloqueado · a plazo</div><div class="d" id="liqPlazoTxt">€0 · 0%</div>
-          <div class="note">Crowdfunding — atado al vencimiento del proyecto</div></div></div>
-      </div>
+      <div class="spectrum" id="specLiquidez"></div>
+      <div class="spectrum-legend" id="specLiquidezLegend"></div>
     </div>
 
     <div class="spectrum-block">
@@ -308,6 +295,42 @@
 
   </div>
 
+  <!-- ================= INMUEBLES ================= -->
+  <div class="view" id="viewInmuebles">
+
+    <div class="stat-row">
+      <div class="stat-box">
+        <div class="stat-label">Valor inmuebles</div>
+        <div class="stat-value" id="inmValorTotal">€0</div>
+        <div class="stat-sub" id="inmPlusvaliaTotal">+0,0%</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Alquileres (histórico)</div>
+        <div class="stat-value" id="inmAlquilerTotal">€0</div>
+      </div>
+      <div class="stat-box highlight">
+        <div class="stat-label">Neto acumulado</div>
+        <div class="stat-value" id="inmNetoTotal">€0</div>
+      </div>
+    </div>
+
+    <div class="panel" id="addPropertyPanel">
+      <p class="panel-title">Añadir inmueble</p>
+      <div class="form-grid">
+        <div class="field"><label>Titular</label><select id="ipVeh"></select></div>
+        <div class="field"><label>Nombre / Alias</label><input id="ipNombre" type="text" placeholder="Piso Malasaña"></div>
+        <div class="field"><label>Fecha compra</label><input id="ipFecha" type="date"></div>
+        <div class="field"><label>Precio compra</label><input id="ipPrecio" type="number" step="0.01" placeholder="0"></div>
+        <div class="field"><label>Valor actual</label><input id="ipValor" type="number" step="0.01" placeholder="0"></div>
+      </div>
+      <button class="btn primary" id="ipSubmit">+ Añadir inmueble</button>
+    </div>
+
+    <p class="section-label">Inmuebles</p>
+    <div class="cards" id="propertyCards"></div>
+
+  </div>
+
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
@@ -341,7 +364,7 @@
   }
 
   function defaultState(){
-    const s = { fx: 0.92 };
+    const s = { fx: 0.92, inmuebles: [] };
     CATS.forEach(c=>{ s[c.key] = [blankRow(c)]; });
     s.indexa[0].a = 'Cartera indexada';
     const cf = CATS.find(c=>c.key==='crowdfunding');
@@ -352,12 +375,50 @@
     return s;
   }
 
+  const INMUEBLES_HEX = '#8C7A66';
+  const LIQ_BUCKETS = [
+    { key:'liquido', label:'Líquido', hex:'#5FA37A', note:'Acciones, ETF, Indexa, Crypto y Efectivo — disponible en días' },
+    { key:'jubilacion', label:'Bloqueado · jubilación', hex:'#8E7FC0', note:'Plan de pensiones — solo rescatable en supuestos legales' },
+    { key:'plazo', label:'Bloqueado · a plazo', hex:'#C08A3E', note:'Crowdfunding — atado al vencimiento del proyecto' },
+    { key:'inmobiliario', label:'Bloqueado · inmobiliario', hex:INMUEBLES_HEX, note:'Inmuebles — ilíquido, requiere venta para disponer' },
+  ];
+
+  function blankProperty(){
+    return { veh: VEHS[0].key, nombre:'', fechaCompra: todayISO(), precioCompra:0, valorActual:0, movimientos:[] };
+  }
+  function blankMovimiento(){
+    return { mes: todayISO().slice(0,7), alquiler:0, gastos:0, nota:'' };
+  }
+  function propertiesTotals(){
+    let inv=0, val=0;
+    state.inmuebles.forEach(p=>{ inv += Number(p.precioCompra)||0; val += Number(p.valorActual)||0; });
+    return { inv, val, pl: val-inv, plPct: inv>0 ? ((val-inv)/inv*100) : 0 };
+  }
+  function propertiesRentTotals(){
+    let alquiler=0, gastos=0;
+    state.inmuebles.forEach(p=>{ (p.movimientos||[]).forEach(m=>{ alquiler += Number(m.alquiler)||0; gastos += Number(m.gastos)||0; }); });
+    return { alquiler, gastos, neto: alquiler-gastos };
+  }
+  function propertyRentTotals(prop){
+    return (prop.movimientos||[]).reduce((acc,m)=>({
+      alquiler: acc.alquiler + (Number(m.alquiler)||0),
+      gastos: acc.gastos + (Number(m.gastos)||0)
+    }), { alquiler:0, gastos:0 });
+  }
+  function totalPatrimonio(){
+    const gc = grandTotals();
+    const gp = propertiesTotals();
+    const inv = gc.inv + gp.inv, val = gc.val + gp.val;
+    return { inv, val, pl: val-inv, plPct: inv>0 ? ((val-inv)/inv*100) : 0 };
+  }
+
   const DEFAULT_SUPABASE_CONFIG = {
     url: 'https://pnprzupnqpjqgtlqkrfd.supabase.co',
     key: 'sb_publishable_KtVZaVnSCuSNVJG5qlYlUg_WAiHOoOj'
   };
   const SUPABASE_TABLE = 'portfolio_holdings';
   const SUPABASE_SNAPSHOTS_TABLE = 'portfolio_snapshots';
+  const PROPERTIES_TABLE = 'properties';
 
   const sbClient = supabase.createClient(DEFAULT_SUPABASE_CONFIG.url, DEFAULT_SUPABASE_CONFIG.key);
 
@@ -388,6 +449,7 @@
     const out = {};
     VEHS.forEach(v=>{ out[v.key] = 0; });
     CATS.forEach(c=>{ (state[c.key]||[]).forEach(r=>{ if(r.vendido) return; out[r.veh||VEHS[0].key] += toEUR(r.val, r.cur); }); });
+    state.inmuebles.forEach(p=>{ out[p.veh||VEHS[0].key] = (out[p.veh||VEHS[0].key]||0) + (Number(p.valorActual)||0); });
     return out;
   }
   function realizedTotals(){
@@ -409,11 +471,12 @@
   function liqTotals(){
     const out = {};
     Object.keys(LIQ_MAP).forEach(bucket=>{ let val=0; LIQ_MAP[bucket].forEach(k=>{ val += catTotals(k).val; }); out[bucket]=val; });
+    out.inmobiliario = propertiesTotals().val;
     return out;
   }
 
   function renderSummary(){
-    const g = grandTotals();
+    const g = totalPatrimonio();
     document.getElementById('heroTotal').textContent = fmtEUR(g.val);
     document.getElementById('heroInvertido').textContent = fmtEUR(g.inv);
     document.getElementById('heroDate').textContent = new Date().toLocaleDateString('es-ES', { day:'2-digit', month:'short', year:'numeric' });
@@ -443,15 +506,25 @@
 
     const totalVal = g.val || 1;
     const lt = liqTotals();
-    const pLiq = lt.liquido/totalVal*100, pJub = lt.jubilacion/totalVal*100, pPlazo = lt.plazo/totalVal*100;
-    requestAnimationFrame(()=>{
-      document.getElementById('segLiquido').style.width = pLiq + '%';
-      document.getElementById('segJubilacion').style.width = pJub + '%';
-      document.getElementById('segPlazo').style.width = pPlazo + '%';
+    const specLiqSegEl = document.getElementById('specLiquidez');
+    const specLiqLegendEl = document.getElementById('specLiquidezLegend');
+    specLiqSegEl.innerHTML = '';
+    specLiqLegendEl.innerHTML = '';
+    LIQ_BUCKETS.forEach(b=>{
+      const val = lt[b.key] || 0;
+      const pct = totalVal>0 ? (val/totalVal*100) : 0;
+      const seg = document.createElement('div');
+      seg.className = 'seg';
+      seg.style.background = b.hex;
+      specLiqSegEl.appendChild(seg);
+      requestAnimationFrame(()=>{ seg.style.width = pct + '%'; });
+      const item = document.createElement('div');
+      item.className = 'spec-item';
+      item.innerHTML = '<div class="spec-dot" style="background:'+b.hex+'"></div>' +
+        '<div><div class="t">'+b.label+'</div><div class="d">'+fmtEUR(val)+' · '+pct.toFixed(0)+'%</div>' +
+        '<div class="note">'+b.note+'</div></div>';
+      specLiqLegendEl.appendChild(item);
     });
-    document.getElementById('liqLiquidoTxt').textContent = fmtEUR(lt.liquido) + ' · ' + pLiq.toFixed(0) + '%';
-    document.getElementById('liqJubTxt').textContent = fmtEUR(lt.jubilacion) + ' · ' + pJub.toFixed(0) + '%';
-    document.getElementById('liqPlazoTxt').textContent = fmtEUR(lt.plazo) + ' · ' + pPlazo.toFixed(0) + '%';
 
     const vt = vehTotals();
     const specSegEl = document.getElementById('specTitular');
@@ -489,6 +562,18 @@
         '<div class="amt">'+fmtEUR(t.val)+'</div>';
       legendEl.appendChild(row);
     });
+    const propVal = propertiesTotals().val;
+    if(propVal > 0){
+      const pct = totalVal>0 ? (propVal/totalVal*100) : 0;
+      stops.push(INMUEBLES_HEX + ' ' + cum.toFixed(2) + '% ' + (cum+pct).toFixed(2) + '%');
+      cum += pct;
+      const row = document.createElement('div');
+      row.className = 'legend-row';
+      row.innerHTML = '<div class="dot" style="background:'+INMUEBLES_HEX+'"></div>' +
+        '<div class="name">Inmuebles</div>' + '<div class="pct">'+pct.toFixed(0)+'%</div>' +
+        '<div class="amt">'+fmtEUR(propVal)+'</div>';
+      legendEl.appendChild(row);
+    }
     const ring = document.getElementById('donutRing');
     ring.style.background = stops.length ? ('conic-gradient(' + stops.join(', ') + ')') : 'var(--surface-2)';
     document.getElementById('donutCenter').textContent = fmtEUR(g.val);
@@ -567,6 +652,76 @@
     });
   }
 
+  /* ---------- Inmuebles ---------- */
+  function renderPropertySummary(){
+    const pt = propertiesTotals();
+    const rt = propertiesRentTotals();
+    document.getElementById('inmValorTotal').textContent = fmtEUR(pt.val);
+    document.getElementById('inmPlusvaliaTotal').textContent = fmtPct(pt.plPct) + ' sobre precio de compra';
+    document.getElementById('inmAlquilerTotal').textContent = fmtEUR(rt.alquiler);
+    document.getElementById('inmNetoTotal').textContent = fmtEUR(rt.neto);
+  }
+
+  function renderPropertyCardStats(pIdx){
+    const container = document.getElementById('property-card-'+pIdx);
+    if(!container) return;
+    const prop = state.inmuebles[pIdx];
+    const pl = (Number(prop.valorActual)||0) - (Number(prop.precioCompra)||0);
+    const plPct = prop.precioCompra>0 ? (pl/prop.precioCompra*100) : 0;
+    const rent = propertyRentTotals(prop);
+    const statsEl = container.querySelector('.card-stats');
+    statsEl.innerHTML =
+      '<span>Compra: <b style="color:var(--ink)">'+fmtEUR(prop.precioCompra)+'</b></span>' +
+      '<span>Valor: <b style="color:var(--ink)">'+fmtEUR(prop.valorActual)+'</b></span>' +
+      '<span class="pl '+(pl>=0?'pos':'neg')+'">'+fmtPct(plPct)+'</span>' +
+      '<span>Neto alquiler: <b style="color:var(--ink)">'+fmtEUR(rent.alquiler-rent.gastos)+'</b></span>';
+  }
+
+  function renderLedger(pIdx){
+    const prop = state.inmuebles[pIdx];
+    const tbody = document.getElementById('ledger-'+pIdx);
+    if(!tbody) return;
+    tbody.innerHTML = '';
+    (prop.movimientos||[]).forEach((m, mIdx)=>{
+      const neto = (Number(m.alquiler)||0) - (Number(m.gastos)||0);
+      const tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td><input class="ledgercell" type="month" data-pidx="'+pIdx+'" data-midx="'+mIdx+'" data-mfield="mes" value="'+(m.mes||'')+'"></td>' +
+        '<td class="num"><input class="num ledgercell" type="number" step="0.01" data-pidx="'+pIdx+'" data-midx="'+mIdx+'" data-mfield="alquiler" value="'+(m.alquiler||'')+'" placeholder="0"></td>' +
+        '<td class="num"><input class="num ledgercell" type="number" step="0.01" data-pidx="'+pIdx+'" data-midx="'+mIdx+'" data-mfield="gastos" value="'+(m.gastos||'')+'" placeholder="0"></td>' +
+        '<td class="eur" data-ledgernet="'+pIdx+'-'+mIdx+'">'+fmtEUR(neto)+'</td>' +
+        '<td><input class="ledgercell" data-pidx="'+pIdx+'" data-midx="'+mIdx+'" data-mfield="nota" value="'+escapeHtml(m.nota||'')+'" placeholder="Nota"></td>' +
+        '<td class="del"><button class="del-btn-prop" data-ledger-del-p="'+pIdx+'" data-ledger-del-m="'+mIdx+'" title="Eliminar mes">×</button></td>';
+      tbody.appendChild(tr);
+    });
+  }
+
+  function buildPropertyCards(){
+    const container = document.getElementById('propertyCards');
+    container.innerHTML = '';
+    state.inmuebles.forEach((prop, pIdx)=>{
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.id = 'property-card-'+pIdx;
+      card.style.setProperty('--cat-color', 'var(--c-inmuebles)');
+      card.innerHTML =
+        '<div class="card-head"><div class="card-title">'+escapeHtml(prop.nombre||'Inmueble')+'</div><div class="card-stats"></div>' +
+        '<button class="del-btn-prop" data-prop-del="'+pIdx+'" title="Eliminar inmueble">×</button></div>' +
+        '<div class="form-grid">' +
+          '<div class="field"><label>Nombre</label><input class="propcell" data-pidx="'+pIdx+'" data-pfield="nombre" value="'+escapeHtml(prop.nombre||'')+'"></div>' +
+          '<div class="field"><label>Titular</label><select class="propcell" data-pidx="'+pIdx+'" data-pfield="veh">'+vehOptions(prop.veh)+'</select></div>' +
+          '<div class="field"><label>Fecha compra</label><input class="propcell" type="date" data-pidx="'+pIdx+'" data-pfield="fechaCompra" value="'+(prop.fechaCompra||'')+'"></div>' +
+          '<div class="field"><label>Precio compra</label><input class="propcell" type="number" step="0.01" data-pidx="'+pIdx+'" data-pfield="precioCompra" value="'+(prop.precioCompra||'')+'"></div>' +
+          '<div class="field"><label>Valor actual</label><input class="propcell" type="number" step="0.01" data-pidx="'+pIdx+'" data-pfield="valorActual" value="'+(prop.valorActual||'')+'"></div>' +
+        '</div>' +
+        '<div class="table-scroll"><table><thead><tr><th>Mes</th><th class="num">Alquiler</th><th class="num">Gastos</th><th class="num">Neto</th><th>Nota</th><th></th></tr></thead><tbody id="ledger-'+pIdx+'"></tbody></table></div>' +
+        '<button class="add-row-prop" data-ledger-add="'+pIdx+'">+ Añadir mes</button>';
+      container.appendChild(card);
+      renderPropertyCardStats(pIdx);
+      renderLedger(pIdx);
+    });
+  }
+
   /* ---------- Formulario "Añadir inversión" ---------- */
   const afCat = document.getElementById('afCat');
   const afVeh = document.getElementById('afVeh');
@@ -603,6 +758,32 @@
     renderSummary();
     scheduleSave();
     afC1.value=''; afC2.value=''; afInv.value=''; afVal.value=''; afVenc.value=''; afFecha.value = todayISO();
+  });
+
+  /* ---------- Formulario "Añadir inmueble" ---------- */
+  const ipVeh = document.getElementById('ipVeh');
+  const ipNombre = document.getElementById('ipNombre');
+  const ipFecha = document.getElementById('ipFecha');
+  const ipPrecio = document.getElementById('ipPrecio');
+  const ipValor = document.getElementById('ipValor');
+  ipVeh.innerHTML = vehOptions(VEHS[0].key);
+  ipFecha.value = todayISO();
+
+  document.getElementById('ipSubmit').addEventListener('click', ()=>{
+    const nombre = ipNombre.value.trim();
+    if(!nombre){ alert('Ponle un nombre o alias al inmueble.'); return; }
+    const prop = blankProperty();
+    prop.veh = ipVeh.value;
+    prop.nombre = nombre;
+    prop.fechaCompra = ipFecha.value || todayISO();
+    prop.precioCompra = parseFloat(ipPrecio.value)||0;
+    prop.valorActual = parseFloat(ipValor.value)||0;
+    state.inmuebles.push(prop);
+    buildPropertyCards();
+    renderPropertySummary();
+    renderSummary();
+    scheduleSave();
+    ipNombre.value=''; ipPrecio.value=''; ipValor.value=''; ipFecha.value = todayISO();
   });
 
   /* ---------- Pestañas ---------- */
@@ -698,6 +879,33 @@
     if(!insRes.ok){ throw new Error('HTTP ' + insRes.status + ' al insertar'); }
     return true;
   }
+  function toPropertyDbRow(p){
+    return { titular: p.veh, nombre: p.nombre, fecha_compra: p.fechaCompra, precio_compra: p.precioCompra, valor_actual: p.valorActual, movimientos: p.movimientos||[] };
+  }
+  function fromPropertyDbRow(r){
+    return { veh: r.titular||VEHS[0].key, nombre: r.nombre||'', fechaCompra: r.fecha_compra||'', precioCompra: parseFloat(r.precio_compra)||0, valorActual: parseFloat(r.valor_actual)||0, movimientos: Array.isArray(r.movimientos) ? r.movimientos : [] };
+  }
+  async function supabaseGetProperties(){
+    const res = await fetch(supabaseConfig.url + '/rest/v1/' + PROPERTIES_TABLE + '?select=*', { headers: authHeaders() });
+    if(!res.ok){ throw new Error('HTTP ' + res.status); }
+    const rows = await res.json();
+    return rows.map(fromPropertyDbRow);
+  }
+  async function supabasePostProperties(properties){
+    const delRes = await fetch(supabaseConfig.url + '/rest/v1/' + PROPERTIES_TABLE + '?id=gte.0', {
+      method:'DELETE',
+      headers: authHeaders()
+    });
+    if(!delRes.ok){ throw new Error('HTTP ' + delRes.status + ' al borrar inmuebles'); }
+    if(properties.length === 0) return true;
+    const insRes = await fetch(supabaseConfig.url + '/rest/v1/' + PROPERTIES_TABLE, {
+      method:'POST',
+      headers: Object.assign({}, authHeaders(), { 'Content-Type': 'application/json', Prefer: 'return=minimal' }),
+      body: JSON.stringify(properties.map(toPropertyDbRow))
+    });
+    if(!insRes.ok){ throw new Error('HTTP ' + insRes.status + ' al insertar inmuebles'); }
+    return true;
+  }
   function setSyncStatus(msg, kind){
     const el = document.getElementById('syncStatus');
     el.textContent = msg;
@@ -705,11 +913,12 @@
   }
 
   async function maybeSaveSnapshot(){
-    const g = grandTotals();
+    const g = totalPatrimonio();
     const rt = realizedTotals();
     const breakdown = {
       categorias: Object.fromEntries(CATS.map(c => [c.key, catTotals(c.key).val])),
-      titulares: vehTotals()
+      titulares: vehTotals(),
+      inmuebles: propertiesTotals().val
     };
     try{
       await fetch(supabaseConfig.url + '/rest/v1/' + SUPABASE_SNAPSHOTS_TABLE, {
@@ -766,6 +975,7 @@
     if(currentSession){
       try{
         await supabasePost(serializeRows());
+        await supabasePostProperties(state.inmuebles);
         await maybeSaveSnapshot();
         loadSnapshots().then(renderEvolutionChart);
         setSyncStatus('Sincronizado con Supabase · ' + new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}), 'ok');
@@ -789,8 +999,11 @@
         if(raw){ state = Object.assign(defaultState(), JSON.parse(raw)); }
       }catch(e){}
     }
+    try{ state.inmuebles = await supabaseGetProperties(); }catch(e){}
     document.getElementById('fxRate').value = state.fx;
     buildCards();
+    buildPropertyCards();
+    renderPropertySummary();
     renderSummary();
     await maybeSaveSnapshot();
     loadSnapshots().then(renderEvolutionChart);
@@ -801,8 +1014,9 @@
     try{
       const rows = await supabaseGet();
       state = deserializeRows(rows);
+      state.inmuebles = await supabaseGetProperties();
       document.getElementById('fxRate').value = state.fx;
-      buildCards(); renderSummary();
+      buildCards(); buildPropertyCards(); renderPropertySummary(); renderSummary();
       loadSnapshots().then(renderEvolutionChart);
       setSyncStatus('Datos actualizados desde Supabase', 'ok');
     }catch(e){ setSyncStatus('Error al sincronizar (' + e.message + ')', 'err'); }
@@ -900,6 +1114,25 @@
       state[cat][idx][field] = isNum ? (parseFloat(e.target.value)||0) : e.target.value;
       if(field === 'val' || field === 'cur') refreshEurCells(cat);
       renderCardStats(cat); renderSummary(); scheduleSave();
+      return;
+    }
+    if(e.target.matches('.propcell')){
+      const pIdx = Number(e.target.dataset.pidx), field = e.target.dataset.pfield;
+      const isNum = field === 'precioCompra' || field === 'valorActual';
+      state.inmuebles[pIdx][field] = isNum ? (parseFloat(e.target.value)||0) : e.target.value;
+      renderPropertyCardStats(pIdx); renderPropertySummary(); renderSummary(); scheduleSave();
+      return;
+    }
+    if(e.target.matches('.ledgercell')){
+      const pIdx = Number(e.target.dataset.pidx), mIdx = Number(e.target.dataset.midx), field = e.target.dataset.mfield;
+      const isNum = field === 'alquiler' || field === 'gastos';
+      const m = state.inmuebles[pIdx].movimientos[mIdx];
+      m[field] = isNum ? (parseFloat(e.target.value)||0) : e.target.value;
+      if(isNum){
+        const netoCell = document.querySelector('[data-ledgernet="'+pIdx+'-'+mIdx+'"]');
+        if(netoCell) netoCell.textContent = fmtEUR((Number(m.alquiler)||0) - (Number(m.gastos)||0));
+      }
+      renderPropertyCardStats(pIdx); renderPropertySummary(); renderSummary(); scheduleSave();
     }
   });
 
@@ -909,6 +1142,11 @@
       state[cat][idx][field] = e.target.value;
       if(field === 'cur') refreshEurCells(cat);
       renderCardStats(cat); renderSummary(); scheduleSave();
+    }
+    if(e.target.matches('select.propcell')){
+      const pIdx = Number(e.target.dataset.pidx), field = e.target.dataset.pfield;
+      state.inmuebles[pIdx][field] = e.target.value;
+      renderPropertyCardStats(pIdx); renderSummary(); scheduleSave();
     }
     if(e.target.matches('input[type=checkbox][data-field=vendido]')){
       const cat = e.target.dataset.cat, idx = Number(e.target.dataset.idx);
@@ -939,8 +1177,23 @@
       if(confirm('¿Restablecer la plantilla? Se perderán los datos introducidos localmente (la hoja de Sheets, si está conectada, no se toca hasta que sincronices).')){
         state = defaultState();
         document.getElementById('fxRate').value = state.fx;
-        buildCards(); renderSummary(); scheduleSave();
+        buildCards(); buildPropertyCards(); renderPropertySummary(); renderSummary(); scheduleSave();
       }
+    }
+    if(e.target.matches('[data-prop-del]')){
+      const pIdx = Number(e.target.dataset.propDel);
+      state.inmuebles.splice(pIdx,1);
+      buildPropertyCards(); renderPropertySummary(); renderSummary(); scheduleSave();
+    }
+    if(e.target.matches('[data-ledger-add]')){
+      const pIdx = Number(e.target.dataset.ledgerAdd);
+      state.inmuebles[pIdx].movimientos.push(blankMovimiento());
+      renderLedger(pIdx); renderPropertyCardStats(pIdx); renderPropertySummary(); renderSummary(); scheduleSave();
+    }
+    if(e.target.matches('[data-ledger-del-p]')){
+      const pIdx = Number(e.target.dataset.ledgerDelP), mIdx = Number(e.target.dataset.ledgerDelM);
+      state.inmuebles[pIdx].movimientos.splice(mIdx,1);
+      renderLedger(pIdx); renderPropertyCardStats(pIdx); renderPropertySummary(); renderSummary(); scheduleSave();
     }
   });
 
