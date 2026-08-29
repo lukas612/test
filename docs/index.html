@@ -301,6 +301,7 @@
 
     <div class="footer">
       <span id="saveStatus">Guardado automático activado</span>
+      <button class="btn" id="exportCsvBtn">Exportar CSV</button>
       <button class="btn" id="logoutBtn">Cerrar sesión</button>
       <button class="reset-btn" id="resetBtn">Restablecer plantilla</button>
     </div>
@@ -837,6 +838,39 @@
     currentSession = null;
     showAuthGate();
   });
+
+  /* ---------- Exportar CSV ---------- */
+  function toCSVValue(v){
+    const s = (v === null || v === undefined) ? '' : String(v);
+    return /[";\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s;
+  }
+  function exportCSV(){
+    const headers = ['Categoria','Titular','Campo1','Campo2','Moneda','Invertido','ValorActual','Fecha','Vencimiento','Vendido','FechaVenta','ImporteVenta'];
+    const lines = [headers.join(';')];
+    CATS.forEach(cat=>{
+      state[cat.key].forEach(r=>{
+        const veh = VEHS.find(v=>v.key===(r.veh||VEHS[0].key));
+        lines.push([
+          cat.label, veh ? veh.label : (r.veh||''),
+          r[cat.cols[0][0]]||'', cat.cols[1] ? (r[cat.cols[1][0]]||'') : '',
+          r.cur||'EUR', r.inv||0, r.val||0, r.fecha||'',
+          cat.hasDate ? (r.venc||'') : '', r.vendido ? 'Sí' : 'No',
+          r.fechaVenta||'', r.importeVenta||0
+        ].map(toCSVValue).join(';'));
+      });
+    });
+    const csv = '\uFEFF' + lines.join('\r\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'cuadro-mando-' + todayISO() + '.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+  document.getElementById('exportCsvBtn').addEventListener('click', exportCSV);
 
   document.addEventListener('input', (e)=>{
     if(e.target.id === 'fxRate'){
