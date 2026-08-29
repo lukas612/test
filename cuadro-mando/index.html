@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta name="robots" content="noindex, nofollow, noarchive">
+<meta name="googlebot" content="noindex, nofollow">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cuadro de Mando · Patrimonio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,900&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #14171C; --surface: #1F252D; --surface-2: #262D37; --line: #333B46;
+    --ink: #ECE8DF; --ink-dim: #9AA2AC; --ink-faint: #626B76;
+    --gold: #C9A227; --gold-dim: #8C7222; --positive: #5FA37A; --negative: #C1584F;
+    --c-acciones: #5FA37A; --c-etf: #4A8CA6; --c-indexa: #C9A227; --c-pensiones: #8E7FC0; --c-crowdfunding: #C08A3E;
+    --v-lukas: #7FA7C9; --v-whitenut: #9BA6B4; --v-lovicka: #C9A227;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin:0; padding:0; }
+  body{ background: var(--bg); color: var(--ink); font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; padding: 32px 20px 80px; }
+  .wrap{ max-width: 1240px; margin: 0 auto; }
+  .eyebrow{ font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--gold); margin: 0 0 6px; }
+
+  .tabs{ display:flex; gap:8px; margin-bottom: 26px; }
+  .tab-btn{
+    background:none; border:1px solid var(--line); color:var(--ink-dim); font-family:'IBM Plex Mono', monospace;
+    font-size: 12px; letter-spacing:0.06em; text-transform:uppercase; padding: 9px 18px; border-radius: 6px; cursor:pointer;
+  }
+  .tab-btn.active{ background: var(--surface-2); color: var(--gold); border-color: var(--gold-dim); }
+  .view{ display:none; }
+  .view.active{ display:block; }
+
+  .hero{ display:flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 20px; padding-bottom: 20px; margin-bottom: 14px; }
+  .hero-num{ font-family: 'Fraunces', serif; font-weight: 600; font-size: clamp(40px, 7vw, 64px); line-height: 1; letter-spacing: -0.01em; margin: 0; }
+  .hero-sub{ font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: var(--ink-dim); margin-top: 10px; }
+  .hero-sub b{ color: var(--ink); font-weight: 500; }
+  .hero-delta{ text-align: right; display:flex; flex-direction:column; align-items:flex-end; gap:10px; }
+  .delta-pill{ font-family: 'IBM Plex Mono', monospace; font-size: 20px; font-weight: 600; padding: 6px 14px; border-radius: 100px; display: inline-block; }
+  .delta-pill.pos{ color: var(--positive); background: rgba(95,163,122,0.12); }
+  .delta-pill.neg{ color: var(--negative); background: rgba(193,88,79,0.12); }
+  .delta-label{ font-size: 11px; color: var(--ink-faint); margin-top: 6px; font-family:'IBM Plex Mono', monospace; }
+
+  .btn{ background: var(--surface-2); border: 1px solid var(--line); color: var(--ink-dim); font-family:'IBM Plex Mono', monospace; font-size: 12px; padding: 8px 14px; border-radius: 6px; cursor:pointer; }
+  .btn:hover{ border-color: var(--gold-dim); color: var(--gold); }
+  .btn.primary{ border-color: var(--gold-dim); color: var(--gold); }
+
+  .panel{ border: 1px solid var(--line); border-radius: 8px; padding: 16px 18px; background: var(--surface); margin-bottom: 22px; }
+  .panel-title{ font-family:'IBM Plex Mono', monospace; font-size: 11px; letter-spacing:0.1em; text-transform:uppercase; color: var(--ink-faint); margin: 0 0 12px; }
+  .fxbar{ display:flex; align-items:center; gap: 10px; flex-wrap: wrap; font-family:'IBM Plex Mono', monospace; font-size: 12.5px; color: var(--ink-dim); }
+  .fxbar input{ background: var(--surface-2); border: 1px solid var(--line); color: var(--ink); font-family:'IBM Plex Mono', monospace; font-size: 12.5px; width: 80px; padding: 5px 8px; border-radius: 5px; text-align:right; }
+
+  .sync-row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+  .sync-row input[type=text], .sync-row input[type=password]{ background: var(--surface-2); border: 1px solid var(--line); color: var(--ink); font-family:'IBM Plex Mono', monospace; font-size: 12px; padding: 7px 9px; border-radius: 5px; }
+  #sheetsUrl{ flex: 1; min-width: 220px; }
+  #sheetsToken{ width: 140px; }
+  .sync-status{ font-family:'IBM Plex Mono', monospace; font-size: 12px; color: var(--ink-faint); margin-top: 10px; }
+  .sync-status.ok{ color: var(--positive); }
+  .sync-status.err{ color: var(--negative); }
+
+  input:focus, select:focus{ outline: 1px solid var(--gold-dim); }
+
+  .form-grid{ display:grid; grid-template-columns: repeat(auto-fit, minmax(140px,1fr)); gap:12px; margin-bottom: 14px; }
+  .field label{ display:block; font-family:'IBM Plex Mono', monospace; font-size:10px; text-transform:uppercase; letter-spacing:0.05em; color: var(--ink-faint); margin-bottom:5px; }
+  .field input, .field select{ width:100%; background: var(--surface-2); border:1px solid var(--line); color: var(--ink); font-family:'Inter', sans-serif; font-size:13px; padding:8px 9px; border-radius:5px; }
+  .field input[type=date], .field input[type=number]{ font-family:'IBM Plex Mono', monospace; }
+
+  .section-label{ font-family:'IBM Plex Mono', monospace; font-size: 11.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-faint); margin: 0 0 14px; display:flex; align-items:center; gap:10px; }
+  .section-label::after{ content:''; flex:1; height:1px; background: var(--line); }
+
+  .spectrum-block{ margin-bottom: 40px; }
+  .spectrum{ display:flex; width:100%; height: 40px; border-radius: 6px; overflow:hidden; background: var(--surface-2); border:1px solid var(--line); }
+  .spectrum .seg{ height:100%; width: 0%; transition: width 900ms cubic-bezier(.2,.8,.2,1); }
+  .spectrum .seg.liquido{ background: var(--c-acciones); }
+  .spectrum .seg.jubilacion{ background: var(--c-pensiones); }
+  .spectrum .seg.plazo{ background: var(--c-crowdfunding); }
+  .spectrum .seg.lukas{ background: var(--v-lukas); }
+  .spectrum .seg.whitenut{ background: var(--v-whitenut); }
+  .spectrum .seg.lovicka{ background: var(--v-lovicka); }
+  .spectrum-legend{ display:flex; flex-wrap:wrap; gap: 22px; margin-top: 14px; }
+  .spec-item{ display:flex; align-items:flex-start; gap:9px; min-width: 170px; }
+  .spec-dot{ width:10px; height:10px; border-radius:2px; margin-top:4px; flex-shrink:0; }
+  .spec-item .t{ font-size: 13px; font-weight:600; color: var(--ink); }
+  .spec-item .d{ font-size: 12px; color: var(--ink-dim); font-family:'IBM Plex Mono', monospace; margin-top:2px;}
+  .spec-item .note{ font-size: 11.5px; color: var(--ink-faint); margin-top: 3px; max-width: 240px; }
+
+  .stat-row{ display:flex; gap:16px; flex-wrap:wrap; margin-bottom: 40px; }
+  .stat-box{ flex:1; min-width: 180px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; }
+  .stat-box.highlight{ border-color: var(--gold-dim); }
+  .stat-label{ font-family:'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing:0.08em; text-transform:uppercase; color: var(--ink-faint); }
+  .stat-value{ font-family:'Fraunces', serif; font-weight:600; font-size: 26px; margin-top: 8px; }
+  .stat-value.pos{ color: var(--positive); }
+  .stat-value.neg{ color: var(--negative); }
+  .stat-sub{ font-family:'IBM Plex Mono', monospace; font-size: 12px; color: var(--ink-dim); margin-top: 4px; }
+
+  td.vendido{ width: 46px; text-align:center; }
+  td.vendido input[type=checkbox]{ width:16px; height:16px; cursor:pointer; }
+  td.venta{ width: 120px; }
+
+  .alloc-row{ display:flex; gap: 40px; flex-wrap: wrap; align-items:center; margin-bottom: 10px; }
+  .donut-holder{ position:relative; width:180px; height:180px; flex-shrink:0; }
+  .donut-holder .ring{ width:180px; height:180px; border-radius:50%; }
+  .donut-hole{ position:absolute; top:22px; left:22px; width:136px; height:136px; border-radius:50%; background: var(--bg); display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  .donut-hole .lbl{ font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--ink-faint); font-family:'IBM Plex Mono', monospace;}
+  .donut-hole .val{ font-family:'Fraunces', serif; font-weight:600; font-size:19px; margin-top:4px; text-align:center; padding:0 6px;}
+  .legend{ flex:1; min-width: 260px; display:flex; flex-direction:column; gap:10px; }
+  .legend-row{ display:flex; align-items:center; gap:10px; font-size:13.5px; }
+  .legend-row .dot{ width:9px; height:9px; border-radius:2px; flex-shrink:0; }
+  .legend-row .name{ flex:1; color: var(--ink); }
+  .legend-row .pct{ font-family:'IBM Plex Mono', monospace; color: var(--ink-dim); width:48px; text-align:right; }
+  .legend-row .amt{ font-family:'IBM Plex Mono', monospace; color: var(--ink); width:110px; text-align:right; }
+
+  .cards{ display:flex; flex-direction:column; gap: 22px; margin-bottom: 30px; }
+  .card{ background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 20px 22px 16px; border-top: 3px solid var(--cat-color, var(--gold)); }
+  .card-head{ display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:10px; margin-bottom: 14px; }
+  .card-title{ font-family:'Fraunces', serif; font-weight:600; font-size: 19px; }
+  .card-stats{ display:flex; gap:18px; font-family:'IBM Plex Mono', monospace; font-size: 13px; color: var(--ink-dim); flex-wrap:wrap; }
+  .card-stats .pl.pos{ color: var(--positive); }
+  .card-stats .pl.neg{ color: var(--negative); }
+
+  .table-scroll{ overflow-x: auto; }
+  table{ width:100%; border-collapse: collapse; min-width: 760px; }
+  thead th{ text-align:left; font-family:'IBM Plex Mono', monospace; font-size: 10px; text-transform:uppercase; letter-spacing:0.05em; color: var(--ink-faint); font-weight:500; padding: 6px 7px; border-bottom: 1px solid var(--line); white-space:nowrap; }
+  thead th.num{ text-align:right; }
+  tbody td{ padding: 5px 6px; border-bottom: 1px solid rgba(51,59,70,0.5); vertical-align:middle;}
+  tbody tr:last-child td{ border-bottom:none; }
+  input.cell, select.cell{ background: transparent; border:none; color: var(--ink); font-family:'Inter', sans-serif; font-size: 13px; width: 100%; padding: 5px 4px; border-radius:4px; }
+  select.cell{ font-family:'IBM Plex Mono', monospace; font-size: 12px; }
+  input.cell:focus, select.cell:focus{ background: var(--surface-2); }
+  input.num{ font-family:'IBM Plex Mono', monospace; text-align:right; }
+  input.date{ font-family:'IBM Plex Mono', monospace; color: var(--ink-dim); }
+  td.num{ text-align:right; width: 105px; }
+  td.veh, td.cur{ width: 110px; }
+  td.fecha{ width: 130px; }
+  td.eur{ text-align:right; width:105px; color: var(--ink-dim); font-family:'IBM Plex Mono', monospace; font-size:12.5px; }
+  td.del{ width: 28px; text-align:center; }
+  .del-btn{ background:none; border:none; color: var(--ink-faint); cursor:pointer; font-size:15px; line-height:1; padding: 4px 6px; border-radius:4px; }
+  .del-btn:hover{ color: var(--negative); background: rgba(193,88,79,0.1); }
+  .add-row{ margin-top: 10px; background: none; border: 1px dashed var(--line); color: var(--ink-dim); font-family:'IBM Plex Mono', monospace; font-size: 12px; padding: 7px 12px; border-radius:6px; cursor:pointer; width:100%; }
+  .add-row:hover{ border-color: var(--gold-dim); color: var(--gold); }
+
+  .footer{ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-top: 34px; padding-top: 18px; border-top: 1px solid var(--line); font-family:'IBM Plex Mono', monospace; font-size: 11.5px; color: var(--ink-faint); }
+  .reset-btn{ background:none; border:1px solid var(--line); color: var(--ink-dim); padding:7px 14px; border-radius: 6px; font-family:'IBM Plex Mono', monospace; font-size: 11.5px; cursor:pointer; }
+  .reset-btn:hover{ border-color: var(--negative); color: var(--negative); }
+
+  @media (max-width: 640px){
+    .hero{ flex-direction: column; align-items:flex-start; }
+    .hero-delta{ align-items:flex-start; text-align:left; }
+    .card-stats{ font-size: 12px; gap: 12px; }
+    .donut-holder{ width:150px; height:150px; }
+    .donut-holder .ring{ width:150px; height:150px; }
+    .donut-hole{ top:19px; left:19px; width:112px; height:112px; }
+    #sheetsUrl{ min-width: 100%; }
+  }
+  @media (prefers-reduced-motion: reduce){ .spectrum .seg{ transition: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <p class="eyebrow">Cuadro de Mando · Patrimonio de Inversión</p>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-view="viewPanel">Panel</button>
+    <button class="tab-btn" data-view="viewMovimientos">Movimientos</button>
+  </div>
+
+  <!-- ================= PANEL (visualización) ================= -->
+  <div class="view active" id="viewPanel">
+
+    <div class="hero">
+      <div>
+        <p class="hero-num" id="heroTotal">€0</p>
+        <p class="hero-sub">Invertido <b id="heroInvertido">€0</b> · actualizado <b id="heroDate">—</b></p>
+      </div>
+      <div class="hero-delta">
+        <span class="delta-pill pos" id="heroDelta">+0,0%</span>
+        <div class="delta-label" id="heroDeltaAbs">+€0 plusvalía</div>
+        <button class="btn primary" id="goToMovimientos">+ Añadir inversión</button>
+      </div>
+    </div>
+
+    <p class="section-label">Rendimiento</p>
+    <div class="stat-row">
+      <div class="stat-box">
+        <div class="stat-label">Plusvalía latente</div>
+        <div class="stat-value" id="statLatente">€0</div>
+        <div class="stat-sub" id="statLatentePct">+0,0%</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Plusvalía realizada</div>
+        <div class="stat-value" id="statRealizada">€0</div>
+        <div class="stat-sub" id="statRealizadaPct">+0,0%</div>
+      </div>
+      <div class="stat-box highlight">
+        <div class="stat-label">Retorno total</div>
+        <div class="stat-value" id="statTotal">€0</div>
+        <div class="stat-sub" id="statTotalPct">+0,0%</div>
+      </div>
+    </div>
+
+    <div class="spectrum-block">
+      <p class="section-label">Espectro de liquidez</p>
+      <div class="spectrum">
+        <div class="seg liquido" id="segLiquido"></div>
+        <div class="seg jubilacion" id="segJubilacion"></div>
+        <div class="seg plazo" id="segPlazo"></div>
+      </div>
+      <div class="spectrum-legend">
+        <div class="spec-item"><div class="spec-dot" style="background:var(--c-acciones)"></div>
+          <div><div class="t">Líquido</div><div class="d" id="liqLiquidoTxt">€0 · 0%</div>
+          <div class="note">Acciones, ETF e Indexa — disponible en días</div></div></div>
+        <div class="spec-item"><div class="spec-dot" style="background:var(--c-pensiones)"></div>
+          <div><div class="t">Bloqueado · jubilación</div><div class="d" id="liqJubTxt">€0 · 0%</div>
+          <div class="note">Plan de pensiones — solo rescatable en supuestos legales</div></div></div>
+        <div class="spec-item"><div class="spec-dot" style="background:var(--c-crowdfunding)"></div>
+          <div><div class="t">Bloqueado · a plazo</div><div class="d" id="liqPlazoTxt">€0 · 0%</div>
+          <div class="note">Crowdfunding — atado al vencimiento del proyecto</div></div></div>
+      </div>
+    </div>
+
+    <div class="spectrum-block">
+      <p class="section-label">Distribución por titular</p>
+      <div class="spectrum">
+        <div class="seg lukas" id="segLukas"></div>
+        <div class="seg whitenut" id="segWhitenut"></div>
+        <div class="seg lovicka" id="segLovicka"></div>
+      </div>
+      <div class="spectrum-legend">
+        <div class="spec-item"><div class="spec-dot" style="background:var(--v-lukas)"></div>
+          <div><div class="t">Lukas personal</div><div class="d" id="vehLukasTxt">€0 · 0%</div>
+          <div class="note">Titularidad directa (IRPF)</div></div></div>
+        <div class="spec-item"><div class="spec-dot" style="background:var(--v-whitenut)"></div>
+          <div><div class="t">Whitenut</div><div class="d" id="vehWhitenutTxt">€0 · 0%</div>
+          <div class="note">Holding española (Whitenut SLU)</div></div></div>
+        <div class="spec-item"><div class="spec-dot" style="background:var(--v-lovicka)"></div>
+          <div><div class="t">Lovicka</div><div class="d" id="vehLovickaTxt">€0 · 0%</div>
+          <div class="note">Holding panameña (Lovicka SA)</div></div></div>
+      </div>
+    </div>
+
+    <p class="section-label">Distribución por producto</p>
+    <div class="alloc-row">
+      <div class="donut-holder">
+        <div class="ring" id="donutRing"></div>
+        <div class="donut-hole"><div class="lbl">Valor actual</div><div class="val" id="donutCenter">€0</div></div>
+      </div>
+      <div class="legend" id="legend"></div>
+    </div>
+
+  </div>
+
+  <!-- ================= MOVIMIENTOS (edición) ================= -->
+  <div class="view" id="viewMovimientos">
+
+    <div class="panel">
+      <p class="panel-title">Tipo de cambio</p>
+      <div class="fxbar">
+        <span>1 USD =</span>
+        <input id="fxRate" type="number" step="0.0001" min="0" value="0.92">
+        <span>EUR — usado para consolidar filas en USD</span>
+      </div>
+    </div>
+
+    <div class="panel">
+      <p class="panel-title">Sincronización con Supabase</p>
+      <div class="sync-row">
+        <input id="sbUrl" type="text" placeholder="Project URL (https://xxxx.supabase.co)" value="https://pnprzupnqpjqgtlqkrfd.supabase.co">
+        <input id="sbKey" type="password" placeholder="anon public API key" value="sb_publishable_KtVZaVnSCuSNVJG5qlYlUg_WAiHOoOj">
+        <button class="btn primary" id="connectBtn">Conectar</button>
+        <button class="btn" id="syncNowBtn">Sincronizar ahora</button>
+        <button class="btn" id="disconnectBtn">Desconectar</button>
+      </div>
+      <div class="sync-status" id="syncStatus">Sin conectar — usando guardado local de Claude</div>
+    </div>
+
+    <div class="panel" id="addFormPanel">
+      <p class="panel-title">Añadir inversión</p>
+      <div class="form-grid">
+        <div class="field"><label>Categoría</label><select id="afCat"></select></div>
+        <div class="field"><label>Titular</label><select id="afVeh"></select></div>
+        <div class="field" id="afC1Wrap"><label id="afC1Label">Activo</label><input id="afC1" type="text"></div>
+        <div class="field" id="afC2Wrap"><label id="afC2Label">Broker</label><input id="afC2" type="text"></div>
+        <div class="field"><label>Moneda</label><select id="afCur"><option value="EUR">EUR</option><option value="USD">USD</option></select></div>
+        <div class="field"><label>Invertido</label><input id="afInv" type="number" step="0.01" placeholder="0"></div>
+        <div class="field"><label>Valor actual</label><input id="afVal" type="number" step="0.01" placeholder="0"></div>
+        <div class="field"><label>Fecha</label><input id="afFecha" type="date"></div>
+        <div class="field" id="afVencWrap"><label>Vencimiento</label><input id="afVenc" type="text" placeholder="mm/aaaa"></div>
+      </div>
+      <button class="btn primary" id="afSubmit">+ Añadir inversión</button>
+    </div>
+
+    <p class="section-label">Detalle y edición por producto</p>
+    <div class="cards" id="cards"></div>
+
+    <div class="footer">
+      <span id="saveStatus">Guardado automático activado</span>
+      <button class="reset-btn" id="resetBtn">Restablecer plantilla</button>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+(function(){
+  const VEHS = [
+    { key:'lukas', label:'Lukas personal' },
+    { key:'whitenut', label:'Whitenut' },
+    { key:'lovicka', label:'Lovicka' },
+  ];
+  const CATS = [
+    { key:'acciones', label:'Acciones', color:'var(--c-acciones)', hex:'#5FA37A', cols:[['a','Activo'],['b','Broker']] },
+    { key:'etf', label:'ETF', color:'var(--c-etf)', hex:'#4A8CA6', cols:[['a','Activo'],['b','Broker']] },
+    { key:'indexa', label:'Indexa Capital', color:'var(--c-indexa)', hex:'#C9A227', cols:[['a','Concepto']] },
+    { key:'pensiones', label:'Plan de Pensiones', color:'var(--c-pensiones)', hex:'#8E7FC0', cols:[['a','Plan'],['b','Entidad']] },
+    { key:'crowdfunding', label:'Crowdfunding', color:'var(--c-crowdfunding)', hex:'#C08A3E', cols:[['a','Proyecto'],['b','Plataforma']], hasDate:true },
+  ];
+  const LIQ_MAP = { liquido:['acciones','etf','indexa'], jubilacion:['pensiones'], plazo:['crowdfunding'] };
+  const ROW_HEADERS = ['categoria','titular','campo1','campo2','moneda','invertido','valorActual','fecha','vencimiento','vendido','fechaVenta','importeVenta'];
+
+  function todayISO(){ return new Date().toISOString().slice(0,10); }
+
+  function blankRow(cat){
+    const row = { veh:'lukas', cur:'EUR', inv:0, val:0, fecha: todayISO(), vendido:false, fechaVenta:'', importeVenta:0 };
+    cat.cols.forEach(([f])=>row[f]='');
+    if(cat.hasDate) row.venc='';
+    return row;
+  }
+
+  function defaultState(){
+    const s = { fx: 0.92 };
+    CATS.forEach(c=>{ s[c.key] = [blankRow(c)]; });
+    s.indexa[0].a = 'Cartera indexada';
+    const cf = CATS.find(c=>c.key==='crowdfunding');
+    s.crowdfunding = [
+      Object.assign(blankRow(cf), { b:'Sodacrowd' }),
+      Object.assign(blankRow(cf), { b:'Housers' })
+    ];
+    return s;
+  }
+
+  const DEFAULT_SUPABASE_CONFIG = {
+    url: 'https://pnprzupnqpjqgtlqkrfd.supabase.co',
+    key: 'sb_publishable_KtVZaVnSCuSNVJG5qlYlUg_WAiHOoOj'
+  };
+  const SUPABASE_TABLE = 'portfolio_holdings';
+
+  let state = defaultState();
+  let supabaseConfig = null;
+  let saveTimer = null;
+
+  function fmtEUR(n, decimals){
+    decimals = decimals === undefined ? 0 : decimals;
+    return n.toLocaleString('es-ES', { style:'currency', currency:'EUR', maximumFractionDigits: decimals, minimumFractionDigits: decimals });
+  }
+  function fmtPct(n){ const s = n > 0 ? '+' : ''; return s + n.toLocaleString('es-ES', { maximumFractionDigits:1, minimumFractionDigits:1 }) + '%'; }
+  function toEUR(amount, cur){ return cur === 'USD' ? (Number(amount)||0) * (state.fx || 0) : (Number(amount)||0); }
+
+  function catTotals(key){
+    const rows = state[key] || [];
+    let inv=0, val=0;
+    rows.forEach(r=>{ if(r.vendido) return; inv += toEUR(r.inv, r.cur); val += toEUR(r.val, r.cur); });
+    return { inv, val, pl: val-inv, plPct: inv>0 ? ((val-inv)/inv*100) : 0 };
+  }
+  function vehTotals(){
+    const out = { lukas:0, whitenut:0, lovicka:0 };
+    CATS.forEach(c=>{ (state[c.key]||[]).forEach(r=>{ if(r.vendido) return; out[r.veh||'lukas'] += toEUR(r.val, r.cur); }); });
+    return out;
+  }
+  function realizedTotals(){
+    let cost=0, proceeds=0;
+    CATS.forEach(cat=>{
+      (state[cat.key]||[]).forEach(r=>{
+        if(!r.vendido) return;
+        cost += toEUR(r.inv, r.cur);
+        proceeds += toEUR(r.importeVenta, r.cur);
+      });
+    });
+    return { cost, proceeds, gain: proceeds-cost, gainPct: cost>0 ? ((proceeds-cost)/cost*100) : 0 };
+  }
+  function grandTotals(){
+    let inv=0, val=0;
+    CATS.forEach(c=>{ const t = catTotals(c.key); inv+=t.inv; val+=t.val; });
+    return { inv, val, pl: val-inv, plPct: inv>0 ? ((val-inv)/inv*100) : 0 };
+  }
+  function liqTotals(){
+    const out = {};
+    Object.keys(LIQ_MAP).forEach(bucket=>{ let val=0; LIQ_MAP[bucket].forEach(k=>{ val += catTotals(k).val; }); out[bucket]=val; });
+    return out;
+  }
+
+  function renderSummary(){
+    const g = grandTotals();
+    document.getElementById('heroTotal').textContent = fmtEUR(g.val);
+    document.getElementById('heroInvertido').textContent = fmtEUR(g.inv);
+    document.getElementById('heroDate').textContent = new Date().toLocaleDateString('es-ES', { day:'2-digit', month:'short', year:'numeric' });
+    const deltaEl = document.getElementById('heroDelta');
+    deltaEl.textContent = fmtPct(g.plPct);
+    deltaEl.className = 'delta-pill ' + (g.pl >= 0 ? 'pos' : 'neg');
+    document.getElementById('heroDeltaAbs').textContent = (g.pl>=0?'+':'') + fmtEUR(g.pl) + ' plusvalía';
+
+    const rt = realizedTotals();
+    const latenteEl = document.getElementById('statLatente');
+    latenteEl.textContent = (g.pl>=0?'+':'') + fmtEUR(g.pl);
+    latenteEl.className = 'stat-value ' + (g.pl>=0?'pos':'neg');
+    document.getElementById('statLatentePct').textContent = fmtPct(g.plPct) + ' sobre invertido activo';
+
+    const realizadaEl = document.getElementById('statRealizada');
+    realizadaEl.textContent = (rt.gain>=0?'+':'') + fmtEUR(rt.gain);
+    realizadaEl.className = 'stat-value ' + (rt.gain>=0?'pos':'neg');
+    document.getElementById('statRealizadaPct').textContent = fmtPct(rt.gainPct) + ' sobre coste vendido';
+
+    const totalGain = g.pl + rt.gain;
+    const totalCost = g.inv + rt.cost;
+    const totalPct = totalCost>0 ? (totalGain/totalCost*100) : 0;
+    const totalEl = document.getElementById('statTotal');
+    totalEl.textContent = (totalGain>=0?'+':'') + fmtEUR(totalGain);
+    totalEl.className = 'stat-value ' + (totalGain>=0?'pos':'neg');
+    document.getElementById('statTotalPct').textContent = fmtPct(totalPct) + ' latente + realizada';
+
+    const totalVal = g.val || 1;
+    const lt = liqTotals();
+    const pLiq = lt.liquido/totalVal*100, pJub = lt.jubilacion/totalVal*100, pPlazo = lt.plazo/totalVal*100;
+    requestAnimationFrame(()=>{
+      document.getElementById('segLiquido').style.width = pLiq + '%';
+      document.getElementById('segJubilacion').style.width = pJub + '%';
+      document.getElementById('segPlazo').style.width = pPlazo + '%';
+    });
+    document.getElementById('liqLiquidoTxt').textContent = fmtEUR(lt.liquido) + ' · ' + pLiq.toFixed(0) + '%';
+    document.getElementById('liqJubTxt').textContent = fmtEUR(lt.jubilacion) + ' · ' + pJub.toFixed(0) + '%';
+    document.getElementById('liqPlazoTxt').textContent = fmtEUR(lt.plazo) + ' · ' + pPlazo.toFixed(0) + '%';
+
+    const vt = vehTotals();
+    const pLukas = vt.lukas/totalVal*100, pWhitenut = vt.whitenut/totalVal*100, pLovicka = vt.lovicka/totalVal*100;
+    requestAnimationFrame(()=>{
+      document.getElementById('segLukas').style.width = pLukas + '%';
+      document.getElementById('segWhitenut').style.width = pWhitenut + '%';
+      document.getElementById('segLovicka').style.width = pLovicka + '%';
+    });
+    document.getElementById('vehLukasTxt').textContent = fmtEUR(vt.lukas) + ' · ' + pLukas.toFixed(0) + '%';
+    document.getElementById('vehWhitenutTxt').textContent = fmtEUR(vt.whitenut) + ' · ' + pWhitenut.toFixed(0) + '%';
+    document.getElementById('vehLovickaTxt').textContent = fmtEUR(vt.lovicka) + ' · ' + pLovicka.toFixed(0) + '%';
+
+    let cum = 0; const stops = [];
+    const legendEl = document.getElementById('legend');
+    legendEl.innerHTML = '';
+    CATS.forEach(c=>{
+      const t = catTotals(c.key);
+      const pct = totalVal>0 ? (t.val/totalVal*100) : 0;
+      if(t.val > 0){ stops.push(c.hex + ' ' + cum.toFixed(2) + '% ' + (cum+pct).toFixed(2) + '%'); }
+      cum += pct;
+      const row = document.createElement('div');
+      row.className = 'legend-row';
+      row.innerHTML = '<div class="dot" style="background:'+c.hex+'"></div>' +
+        '<div class="name">'+c.label+'</div>' + '<div class="pct">'+pct.toFixed(0)+'%</div>' +
+        '<div class="amt">'+fmtEUR(t.val)+'</div>';
+      legendEl.appendChild(row);
+    });
+    const ring = document.getElementById('donutRing');
+    ring.style.background = stops.length ? ('conic-gradient(' + stops.join(', ') + ')') : 'var(--surface-2)';
+    document.getElementById('donutCenter').textContent = fmtEUR(g.val);
+  }
+
+  function vehOptions(sel){ return VEHS.map(v=>'<option value="'+v.key+'" '+(v.key===sel?'selected':'')+'>'+v.label+'</option>').join(''); }
+  function curOptions(sel){ return ['EUR','USD'].map(c=>'<option value="'+c+'" '+(c===sel?'selected':'')+'>'+c+'</option>').join(''); }
+  function escapeHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+  function renderCategory(catKey){
+    const cat = CATS.find(c=>c.key===catKey);
+    const container = document.getElementById('card-'+catKey);
+    const tbody = container.querySelector('tbody');
+    tbody.innerHTML = '';
+    state[catKey].forEach((row, idx)=>{
+      const tr = document.createElement('tr');
+      let cells = '<td class="veh"><select class="cell" data-cat="'+catKey+'" data-idx="'+idx+'" data-field="veh">'+vehOptions(row.veh)+'</select></td>';
+      cells += '<td class="fecha"><input class="cell date" type="date" data-cat="'+catKey+'" data-idx="'+idx+'" data-field="fecha" value="'+(row.fecha||'')+'"></td>';
+      cat.cols.forEach(([field, label])=>{
+        cells += '<td><input class="cell" data-cat="'+catKey+'" data-idx="'+idx+'" data-field="'+field+'" value="'+escapeHtml(row[field]||'')+'" placeholder="'+label+'"></td>';
+      });
+      cells += '<td class="cur"><select class="cell" data-cat="'+catKey+'" data-idx="'+idx+'" data-field="cur">'+curOptions(row.cur)+'</select></td>';
+      cells += '<td class="num"><input class="cell num" data-cat="'+catKey+'" data-idx="'+idx+'" data-field="inv" type="number" step="0.01" value="'+(row.inv||'')+'" placeholder="0"></td>';
+      cells += '<td class="num"><input class="cell num" data-cat="'+catKey+'" data-idx="'+idx+'" data-field="val" type="number" step="0.01" value="'+(row.val||'')+'" placeholder="0"></td>';
+      cells += '<td class="eur" data-eurcell="'+catKey+'-'+idx+'">'+fmtEUR(toEUR(row.val,row.cur))+'</td>';
+      if(cat.hasDate){
+        cells += '<td><input class="cell date" data-cat="'+catKey+'" data-idx="'+idx+'" data-field="venc" type="text" value="'+escapeHtml(row.venc||'')+'" placeholder="mm/aaaa"></td>';
+      }
+      cells += '<td class="vendido"><input type="checkbox" data-cat="'+catKey+'" data-idx="'+idx+'" data-field="vendido" '+(row.vendido?'checked':'')+'></td>';
+      cells += '<td class="venta"><input class="cell date" type="date" data-cat="'+catKey+'" data-idx="'+idx+'" data-field="fechaVenta" value="'+(row.fechaVenta||'')+'"></td>';
+      cells += '<td class="venta num"><input class="cell num" type="number" step="0.01" data-cat="'+catKey+'" data-idx="'+idx+'" data-field="importeVenta" value="'+(row.importeVenta||'')+'" placeholder="0"></td>';
+      cells += '<td class="del"><button class="del-btn" data-cat="'+catKey+'" data-idx="'+idx+'" title="Eliminar fila">×</button></td>';
+      tr.innerHTML = cells;
+      tbody.appendChild(tr);
+    });
+    renderCardStats(catKey);
+  }
+
+  function refreshEurCells(catKey){
+    state[catKey].forEach((row, idx)=>{
+      const cell = document.querySelector('[data-eurcell="'+catKey+'-'+idx+'"]');
+      if(cell) cell.textContent = fmtEUR(toEUR(row.val, row.cur));
+    });
+  }
+
+  function renderCardStats(catKey){
+    const container = document.getElementById('card-'+catKey);
+    const t = catTotals(catKey);
+    const statsEl = container.querySelector('.card-stats');
+    statsEl.innerHTML =
+      '<span>Invertido: <b style="color:var(--ink)">'+fmtEUR(t.inv)+'</b></span>' +
+      '<span>Valor: <b style="color:var(--ink)">'+fmtEUR(t.val)+'</b></span>' +
+      '<span class="pl '+(t.pl>=0?'pos':'neg')+'">'+fmtPct(t.plPct)+'</span>';
+  }
+
+  function buildCards(){
+    const cardsEl = document.getElementById('cards');
+    cardsEl.innerHTML = '';
+    CATS.forEach(cat=>{
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.id = 'card-'+cat.key;
+      card.style.setProperty('--cat-color', cat.color);
+      let headers = '<th>Titular</th><th>Fecha</th>';
+      cat.cols.forEach(([f,label])=>{ headers += '<th>'+label+'</th>'; });
+      headers += '<th>Moneda</th><th class="num">Invertido</th><th class="num">Valor actual</th><th class="num">≈ Valor €</th>';
+      if(cat.hasDate) headers += '<th>Vencimiento</th>';
+      headers += '<th>Vendido</th><th>Fecha venta</th><th class="num">Importe venta</th>';
+      headers += '<th></th>';
+      card.innerHTML =
+        '<div class="card-head"><div class="card-title">'+cat.label+'</div><div class="card-stats"></div></div>' +
+        '<div class="table-scroll"><table><thead><tr>'+headers+'</tr></thead><tbody></tbody></table></div>' +
+        '<button class="add-row" data-cat="'+cat.key+'">+ Añadir fila rápida</button>';
+      cardsEl.appendChild(card);
+      renderCategory(cat.key);
+    });
+  }
+
+  /* ---------- Formulario "Añadir inversión" ---------- */
+  const afCat = document.getElementById('afCat');
+  const afVeh = document.getElementById('afVeh');
+  const afC1 = document.getElementById('afC1'), afC1Label = document.getElementById('afC1Label'), afC1Wrap = document.getElementById('afC1Wrap');
+  const afC2 = document.getElementById('afC2'), afC2Label = document.getElementById('afC2Label'), afC2Wrap = document.getElementById('afC2Wrap');
+  const afCur = document.getElementById('afCur');
+  const afInv = document.getElementById('afInv'), afVal = document.getElementById('afVal');
+  const afFecha = document.getElementById('afFecha');
+  const afVenc = document.getElementById('afVenc'), afVencWrap = document.getElementById('afVencWrap');
+
+  afCat.innerHTML = CATS.map(c=>'<option value="'+c.key+'">'+c.label+'</option>').join('');
+  afVeh.innerHTML = vehOptions('lukas');
+  afFecha.value = todayISO();
+
+  function refreshAddForm(){
+    const cat = CATS.find(c=>c.key===afCat.value);
+    afC1Label.textContent = cat.cols[0][1];
+    if(cat.cols[1]){ afC2Wrap.style.display=''; afC2Label.textContent = cat.cols[1][1]; }
+    else { afC2Wrap.style.display='none'; }
+    afVencWrap.style.display = cat.hasDate ? '' : 'none';
+  }
+  afCat.addEventListener('change', refreshAddForm);
+  refreshAddForm();
+
+  document.getElementById('afSubmit').addEventListener('click', ()=>{
+    const cat = CATS.find(c=>c.key===afCat.value);
+    if(!afC1.value.trim()){ alert('Rellena al menos el campo "'+cat.cols[0][1]+'".'); return; }
+    const row = { veh: afVeh.value, cur: afCur.value, inv: parseFloat(afInv.value)||0, val: parseFloat(afVal.value)||0, fecha: afFecha.value || todayISO(), vendido:false, fechaVenta:'', importeVenta:0 };
+    row[cat.cols[0][0]] = afC1.value.trim();
+    if(cat.cols[1]) row[cat.cols[1][0]] = afC2.value.trim();
+    if(cat.hasDate) row.venc = afVenc.value.trim();
+    state[cat.key].push(row);
+    renderCategory(cat.key);
+    renderSummary();
+    scheduleSave();
+    afC1.value=''; afC2.value=''; afInv.value=''; afVal.value=''; afVenc.value=''; afFecha.value = todayISO();
+  });
+
+  /* ---------- Pestañas ---------- */
+  document.querySelectorAll('.tab-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+      document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById(btn.dataset.view).classList.add('active');
+    });
+  });
+  document.getElementById('goToMovimientos').addEventListener('click', ()=>{
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+    document.querySelector('.tab-btn[data-view="viewMovimientos"]').classList.add('active');
+    document.getElementById('viewMovimientos').classList.add('active');
+    document.getElementById('addFormPanel').scrollIntoView({ behavior:'smooth', block:'start' });
+    afC1.focus();
+  });
+
+  /* ---------- Google Sheets sync ---------- */
+  function serializeRows(){
+    const rows = [];
+    CATS.forEach(cat=>{
+      state[cat.key].forEach(r=>{
+        rows.push({
+          categoria: cat.key, titular: r.veh||'lukas',
+          campo1: r[cat.cols[0][0]] || '', campo2: cat.cols[1] ? (r[cat.cols[1][0]]||'') : '',
+          moneda: r.cur||'EUR', invertido: r.inv||0, valorActual: r.val||0,
+          fecha: r.fecha||'', vencimiento: cat.hasDate ? (r.venc||'') : '',
+          vendido: r.vendido||false, fechaVenta: r.fechaVenta||'', importeVenta: r.importeVenta||0
+        });
+      });
+    });
+    rows.push({ categoria:'_config', titular:'', campo1:'fx', campo2:'', moneda:'', invertido:0, valorActual: state.fx, fecha:'', vencimiento:'', vendido:false, fechaVenta:'', importeVenta:0 });
+    return rows;
+  }
+  function deserializeRows(rows){
+    const s = defaultState();
+    CATS.forEach(c=> s[c.key] = []);
+    let fx = 0.92;
+    rows.forEach(r=>{
+      if(r.categoria === '_config'){ if(r.campo1==='fx') fx = parseFloat(r.valorActual)||fx; return; }
+      const cat = CATS.find(c=>c.key===r.categoria);
+      if(!cat) return;
+      const row = { veh: r.titular||'lukas', cur: r.moneda||'EUR', inv: parseFloat(r.invertido)||0, val: parseFloat(r.valorActual)||0, fecha: r.fecha||'',
+        vendido: (r.vendido === true || r.vendido === 'TRUE' || r.vendido === 'true'), fechaVenta: r.fechaVenta||'', importeVenta: parseFloat(r.importeVenta)||0 };
+      row[cat.cols[0][0]] = r.campo1||'';
+      if(cat.cols[1]) row[cat.cols[1][0]] = r.campo2||'';
+      if(cat.hasDate) row.venc = r.vencimiento||'';
+      s[cat.key].push(row);
+    });
+    CATS.forEach(c=>{ if(s[c.key].length===0) s[c.key].push(blankRow(c)); });
+    s.fx = fx;
+    return s;
+  }
+  function toDbRow(r){
+    return {
+      categoria: r.categoria, titular: r.titular, campo1: r.campo1, campo2: r.campo2,
+      moneda: r.moneda, invertido: r.invertido, valor_actual: r.valorActual,
+      fecha: r.fecha, vencimiento: r.vencimiento,
+      vendido: !!r.vendido, fecha_venta: r.fechaVenta, importe_venta: r.importeVenta
+    };
+  }
+  function fromDbRow(r){
+    return {
+      categoria: r.categoria, titular: r.titular, campo1: r.campo1, campo2: r.campo2,
+      moneda: r.moneda, invertido: r.invertido, valorActual: r.valor_actual,
+      fecha: r.fecha, vencimiento: r.vencimiento,
+      vendido: !!r.vendido, fechaVenta: r.fecha_venta, importeVenta: r.importe_venta
+    };
+  }
+  async function supabaseGet(){
+    const res = await fetch(supabaseConfig.url + '/rest/v1/' + SUPABASE_TABLE + '?select=*', {
+      headers: { apikey: supabaseConfig.key, Authorization: 'Bearer ' + supabaseConfig.key }
+    });
+    if(!res.ok){ throw new Error('HTTP ' + res.status); }
+    const rows = await res.json();
+    return rows.map(fromDbRow);
+  }
+  async function supabasePost(rows){
+    const delRes = await fetch(supabaseConfig.url + '/rest/v1/' + SUPABASE_TABLE + '?id=gte.0', {
+      method:'DELETE',
+      headers: { apikey: supabaseConfig.key, Authorization: 'Bearer ' + supabaseConfig.key }
+    });
+    if(!delRes.ok){ throw new Error('HTTP ' + delRes.status + ' al borrar'); }
+    const payload = rows.map(toDbRow);
+    const insRes = await fetch(supabaseConfig.url + '/rest/v1/' + SUPABASE_TABLE, {
+      method:'POST',
+      headers: {
+        apikey: supabaseConfig.key, Authorization: 'Bearer ' + supabaseConfig.key,
+        'Content-Type': 'application/json', Prefer: 'return=minimal'
+      },
+      body: JSON.stringify(payload)
+    });
+    if(!insRes.ok){ throw new Error('HTTP ' + insRes.status + ' al insertar'); }
+    return true;
+  }
+  function setSyncStatus(msg, kind){
+    const el = document.getElementById('syncStatus');
+    el.textContent = msg;
+    el.className = 'sync-status' + (kind ? ' '+kind : '');
+  }
+  async function saveConfig(cfg){ supabaseConfig = cfg; try{ await window.storage.set('supabase-config', JSON.stringify(cfg), false); }catch(e){} }
+
+  async function persist(){
+    document.getElementById('saveStatus').textContent = 'Guardando…';
+    try{ await window.storage.set('portfolio-data', JSON.stringify(state), false); }catch(e){}
+    if(supabaseConfig && supabaseConfig.url && supabaseConfig.key){
+      try{
+        await supabasePost(serializeRows());
+        setSyncStatus('Sincronizado con Supabase · ' + new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}), 'ok');
+      }catch(e){ setSyncStatus('Guardado local — error al sincronizar con Supabase (' + e.message + ')', 'err'); }
+    }
+    document.getElementById('saveStatus').textContent = 'Guardado automático · ' + new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
+  }
+  function scheduleSave(){ clearTimeout(saveTimer); saveTimer = setTimeout(persist, 600); }
+
+  async function loadState(){
+    try{
+      const res = await window.storage.get('supabase-config', false);
+      if(res && res.value) supabaseConfig = JSON.parse(res.value);
+    }catch(e){}
+    if(!supabaseConfig || !supabaseConfig.url || !supabaseConfig.key){
+      supabaseConfig = (DEFAULT_SUPABASE_CONFIG.url && DEFAULT_SUPABASE_CONFIG.key) ? DEFAULT_SUPABASE_CONFIG : null;
+    }
+    if(supabaseConfig){
+      document.getElementById('sbUrl').value = supabaseConfig.url || '';
+      document.getElementById('sbKey').value = supabaseConfig.key || '';
+    }
+    let loaded = false;
+    if(supabaseConfig && supabaseConfig.url && supabaseConfig.key){
+      try{
+        setSyncStatus('Conectando con Supabase…');
+        const rows = await supabaseGet();
+        if(rows && rows.length){ state = deserializeRows(rows); loaded = true; }
+        setSyncStatus('Sincronizado con Supabase', 'ok');
+      }catch(e){ setSyncStatus('No se pudo conectar con Supabase (' + e.message + ') — usando copia local', 'err'); }
+    }
+    if(!loaded){
+      try{
+        const res = await window.storage.get('portfolio-data', false);
+        if(res && res.value){ state = Object.assign(defaultState(), JSON.parse(res.value)); }
+      }catch(e){}
+    }
+    document.getElementById('fxRate').value = state.fx;
+    buildCards();
+    renderSummary();
+  }
+
+  document.getElementById('connectBtn').addEventListener('click', async ()=>{
+    const url = document.getElementById('sbUrl').value.trim().replace(/\/+$/,'');
+    const key = document.getElementById('sbKey').value.trim();
+    if(!url || !key){ setSyncStatus('Introduce el Project URL y la anon key antes de conectar', 'err'); return; }
+    await saveConfig({ url, key });
+    setSyncStatus('Conectando…');
+    try{
+      const rows = await supabaseGet();
+      if(rows && rows.length){
+        if(confirm('Supabase ya tiene datos. Aceptar = cargarlos aquí (sobrescribe este panel). Cancelar = subir los datos actuales del panel a Supabase (sobrescribe la tabla).')){
+          state = deserializeRows(rows);
+          document.getElementById('fxRate').value = state.fx;
+          buildCards(); renderSummary();
+        } else { await supabasePost(serializeRows()); }
+      } else { await supabasePost(serializeRows()); }
+      setSyncStatus('Conectado y sincronizado con Supabase', 'ok');
+    }catch(e){ setSyncStatus('Error al conectar (' + e.message + ')', 'err'); }
+  });
+
+  document.getElementById('syncNowBtn').addEventListener('click', async ()=>{
+    if(!supabaseConfig || !supabaseConfig.url){ setSyncStatus('Conecta primero Supabase', 'err'); return; }
+    setSyncStatus('Sincronizando…');
+    try{
+      const rows = await supabaseGet();
+      state = deserializeRows(rows);
+      document.getElementById('fxRate').value = state.fx;
+      buildCards(); renderSummary();
+      setSyncStatus('Datos actualizados desde Supabase', 'ok');
+    }catch(e){ setSyncStatus('Error al sincronizar (' + e.message + ')', 'err'); }
+  });
+
+  document.getElementById('disconnectBtn').addEventListener('click', async ()=>{
+    supabaseConfig = null;
+    try{ await window.storage.delete('supabase-config', false); }catch(e){}
+    document.getElementById('sbUrl').value = '';
+    document.getElementById('sbKey').value = '';
+    setSyncStatus('Desconectado — usando guardado local de Claude');
+  });
+
+  document.addEventListener('input', (e)=>{
+    if(e.target.id === 'fxRate'){
+      state.fx = parseFloat(e.target.value) || 0;
+      CATS.forEach(c=>refreshEurCells(c.key));
+      renderSummary(); scheduleSave();
+      return;
+    }
+    if(e.target.matches('.cell')){
+      const cat = e.target.dataset.cat, idx = Number(e.target.dataset.idx), field = e.target.dataset.field;
+      const isNum = field === 'inv' || field === 'val' || field === 'importeVenta';
+      state[cat][idx][field] = isNum ? (parseFloat(e.target.value)||0) : e.target.value;
+      if(field === 'val' || field === 'cur') refreshEurCells(cat);
+      renderCardStats(cat); renderSummary(); scheduleSave();
+    }
+  });
+
+  document.addEventListener('change', (e)=>{
+    if(e.target.matches('select.cell')){
+      const cat = e.target.dataset.cat, idx = Number(e.target.dataset.idx), field = e.target.dataset.field;
+      state[cat][idx][field] = e.target.value;
+      if(field === 'cur') refreshEurCells(cat);
+      renderCardStats(cat); renderSummary(); scheduleSave();
+    }
+    if(e.target.matches('input[type=checkbox][data-field=vendido]')){
+      const cat = e.target.dataset.cat, idx = Number(e.target.dataset.idx);
+      state[cat][idx].vendido = e.target.checked;
+      renderCardStats(cat); renderSummary(); scheduleSave();
+    }
+  });
+
+  document.addEventListener('click', (e)=>{
+    if(e.target.matches('.add-row')){
+      const cat = e.target.dataset.cat;
+      state[cat].push(blankRow(CATS.find(c=>c.key===cat)));
+      renderCategory(cat); renderSummary(); scheduleSave();
+    }
+    if(e.target.matches('.del-btn')){
+      const cat = e.target.dataset.cat, idx = Number(e.target.dataset.idx);
+      state[cat].splice(idx,1);
+      if(state[cat].length === 0){ state[cat].push(blankRow(CATS.find(c=>c.key===cat))); }
+      renderCategory(cat); renderSummary(); scheduleSave();
+    }
+    if(e.target.id === 'resetBtn'){
+      if(confirm('¿Restablecer la plantilla? Se perderán los datos introducidos localmente (la hoja de Sheets, si está conectada, no se toca hasta que sincronices).')){
+        state = defaultState();
+        document.getElementById('fxRate').value = state.fx;
+        buildCards(); renderSummary(); scheduleSave();
+      }
+    }
+  });
+
+  loadState();
+})();
+</script>
+</body>
+</html>
