@@ -14,7 +14,7 @@
     --bg: #14171C; --surface: #1F252D; --surface-2: #262D37; --line: #333B46;
     --ink: #ECE8DF; --ink-dim: #9AA2AC; --ink-faint: #626B76;
     --gold: #C9A227; --gold-dim: #8C7222; --positive: #5FA37A; --negative: #C1584F;
-    --c-acciones: #5FA37A; --c-etf: #4A8CA6; --c-indexa: #C9A227; --c-crypto: #C2617E; --c-pensiones: #8E7FC0; --c-crowdfunding: #C08A3E;
+    --c-acciones: #5FA37A; --c-etf: #4A8CA6; --c-indexa: #C9A227; --c-crypto: #C2617E; --c-efectivo: #B5A889; --c-pensiones: #8E7FC0; --c-crowdfunding: #C08A3E;
   }
   * { box-sizing: border-box; }
   html, body { margin:0; padding:0; }
@@ -324,10 +324,11 @@
     { key:'etf', label:'ETF', color:'var(--c-etf)', hex:'#4A8CA6', cols:[['a','Activo'],['b','Broker']] },
     { key:'indexa', label:'Indexa Capital', color:'var(--c-indexa)', hex:'#C9A227', cols:[['a','Concepto']] },
     { key:'crypto', label:'Crypto', color:'var(--c-crypto)', hex:'#C2617E', cols:[['a','Activo'],['b','Exchange/Wallet']] },
+    { key:'efectivo', label:'Efectivo', color:'var(--c-efectivo)', hex:'#B5A889', cols:[['a','Concepto']] },
     { key:'pensiones', label:'Plan de Pensiones', color:'var(--c-pensiones)', hex:'#8E7FC0', cols:[['a','Plan'],['b','Entidad']] },
     { key:'crowdfunding', label:'Crowdfunding', color:'var(--c-crowdfunding)', hex:'#C08A3E', cols:[['a','Proyecto'],['b','Plataforma']], hasDate:true },
   ];
-  const LIQ_MAP = { liquido:['acciones','etf','indexa','crypto'], jubilacion:['pensiones'], plazo:['crowdfunding'] };
+  const LIQ_MAP = { liquido:['acciones','etf','indexa','crypto','efectivo'], jubilacion:['pensiones'], plazo:['crowdfunding'] };
   const ROW_HEADERS = ['categoria','titular','campo1','campo2','moneda','invertido','valorActual','fecha','vencimiento','vendido','fechaVenta','importeVenta'];
 
   function todayISO(){ return new Date().toISOString().slice(0,10); }
@@ -872,6 +873,20 @@
   }
   document.getElementById('exportCsvBtn').addEventListener('click', exportCSV);
 
+  /* ---------- Venta → Efectivo ---------- */
+  function moveSaleToEfectivo(catObj, soldRow){
+    const efectivoCat = CATS.find(c=>c.key==='efectivo');
+    const cashRow = blankRow(efectivoCat);
+    cashRow.veh = soldRow.veh;
+    cashRow.cur = soldRow.cur;
+    cashRow.inv = soldRow.importeVenta;
+    cashRow.val = soldRow.importeVenta;
+    cashRow.fecha = soldRow.fechaVenta || todayISO();
+    const activo = soldRow[catObj.cols[0][0]] || catObj.label;
+    cashRow.a = 'Venta ' + catObj.label + ' — ' + activo;
+    state.efectivo.push(cashRow);
+  }
+
   document.addEventListener('input', (e)=>{
     if(e.target.id === 'fxRate'){
       state.fx = parseFloat(e.target.value) || 0;
@@ -897,7 +912,13 @@
     }
     if(e.target.matches('input[type=checkbox][data-field=vendido]')){
       const cat = e.target.dataset.cat, idx = Number(e.target.dataset.idx);
-      state[cat][idx].vendido = e.target.checked;
+      const row = state[cat][idx];
+      const wasVendido = row.vendido;
+      row.vendido = e.target.checked;
+      if(!wasVendido && row.vendido && cat !== 'efectivo' && (Number(row.importeVenta)||0) > 0){
+        moveSaleToEfectivo(CATS.find(c=>c.key===cat), row);
+        renderCategory('efectivo');
+      }
       renderCardStats(cat); renderSummary(); scheduleSave();
     }
   });
