@@ -104,7 +104,8 @@
   .donut-hole .lbl{ font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--ink-faint); font-family:'IBM Plex Mono', monospace;}
   .donut-hole .val{ font-family:'Fraunces', serif; font-weight:600; font-size:19px; margin-top:4px; text-align:center; padding:0 6px;}
   .legend{ flex:1; min-width: 260px; display:flex; flex-direction:column; gap:10px; }
-  .legend-row{ display:flex; align-items:center; gap:10px; font-size:13.5px; }
+  .legend-row{ display:flex; flex-direction:column; gap:3px; font-size:13.5px; }
+  .legend-row-main{ display:flex; align-items:center; gap:10px; }
   .legend-row .dot{ width:9px; height:9px; border-radius:2px; flex-shrink:0; }
   .legend-row .name{ flex:1; color: var(--ink); }
   .legend-row .pct{ font-family:'IBM Plex Mono', monospace; color: var(--ink-dim); width:48px; text-align:right; }
@@ -112,6 +113,9 @@
   .legend-row .gain{ font-family:'IBM Plex Mono', monospace; width:100px; text-align:right; }
   .legend-row .gain.pos{ color: var(--positive); }
   .legend-row .gain.neg{ color: var(--negative); }
+  .legend-row-sub{ margin-left:19px; font-family:'IBM Plex Mono', monospace; font-size:11px; color: var(--ink-faint); }
+  .legend-row-sub.pos{ color: var(--positive); }
+  .legend-row-sub.neg{ color: var(--negative); }
 
   .cards{ display:flex; flex-direction:column; gap: 22px; margin-bottom: 30px; }
   .card{ background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 20px 22px 16px; border-top: 3px solid var(--cat-color, var(--gold)); }
@@ -505,6 +509,30 @@
     });
     return { cost, proceeds, gain: proceeds-cost, gainPct: cost>0 ? ((proceeds-cost)/cost*100) : 0 };
   }
+  function catRealizedTotals(key){
+    let cost=0, proceeds=0;
+    (state[key]||[]).forEach(r=>{
+      if(!r.vendido) return;
+      cost += toEUR(r.inv, r.cur);
+      proceeds += toEUR(r.importeVenta, r.cur);
+    });
+    return { cost, proceeds, gain: proceeds-cost, gainPct: cost>0 ? ((proceeds-cost)/cost*100) : 0 };
+  }
+  function vehRealizedTotals(){
+    const out = {};
+    VEHS.forEach(v=>{ out[v.key] = { cost:0, proceeds:0 }; });
+    CATS.forEach(cat=>{
+      (state[cat.key]||[]).forEach(r=>{
+        if(!r.vendido) return;
+        const veh = r.veh || VEHS[0].key;
+        if(!out[veh]) out[veh] = { cost:0, proceeds:0 };
+        out[veh].cost += toEUR(r.inv, r.cur);
+        out[veh].proceeds += toEUR(r.importeVenta, r.cur);
+      });
+    });
+    Object.values(out).forEach(t=>{ t.gain = t.proceeds - t.cost; t.gainPct = t.cost>0 ? (t.gain/t.cost*100) : 0; });
+    return out;
+  }
   function grandTotals(){
     let inv=0, val=0;
     CATS.forEach(c=>{ const t = catTotals(c.key); inv+=t.inv; val+=t.val; });
@@ -570,6 +598,7 @@
 
     const vt = vehTotals();
     const vpl = vehPLTotals();
+    const vrt = vehRealizedTotals();
     const specSegEl = document.getElementById('specTitular');
     const specLegendEl = document.getElementById('specTitularLegend');
     specSegEl.innerHTML = '';
@@ -578,6 +607,7 @@
       const val = vt[v.key] || 0;
       const pct = totalVal>0 ? (val/totalVal*100) : 0;
       const t = vpl[v.key] || { inv:0, val:0, pl:0, plPct:0 };
+      const rt = vrt[v.key] || { cost:0, proceeds:0, gain:0, gainPct:0 };
       const seg = document.createElement('div');
       seg.className = 'seg';
       seg.style.background = v.hex;
@@ -587,7 +617,8 @@
       item.className = 'spec-item';
       item.innerHTML = '<div class="spec-dot" style="background:'+v.hex+'"></div>' +
         '<div><div class="t">'+v.label+'</div><div class="d">'+fmtEUR(val)+' · '+pct.toFixed(0)+'%</div>' +
-        '<div class="gain '+(t.pl>=0?'pos':'neg')+'">'+(t.pl>=0?'+':'')+fmtEUR(t.pl)+' · '+fmtPct(t.plPct)+'</div>' +
+        '<div class="gain '+(t.pl>=0?'pos':'neg')+'">Latente: '+(t.pl>=0?'+':'')+fmtEUR(t.pl)+' · '+fmtPct(t.plPct)+'</div>' +
+        (rt.cost>0 ? '<div class="gain '+(rt.gain>=0?'pos':'neg')+'">Realizada: '+(rt.gain>=0?'+':'')+fmtEUR(rt.gain)+' · '+fmtPct(rt.gainPct)+'</div>' : '') +
         (v.note ? '<div class="note">'+v.note+'</div>' : '') + '</div>';
       specLegendEl.appendChild(item);
     });
@@ -597,15 +628,17 @@
     legendEl.innerHTML = '';
     CATS.forEach(c=>{
       const t = catTotals(c.key);
+      const rt = catRealizedTotals(c.key);
       const pct = totalVal>0 ? (t.val/totalVal*100) : 0;
       if(t.val > 0){ stops.push(c.hex + ' ' + cum.toFixed(2) + '% ' + (cum+pct).toFixed(2) + '%'); }
       cum += pct;
       const row = document.createElement('div');
       row.className = 'legend-row';
-      row.innerHTML = '<div class="dot" style="background:'+c.hex+'"></div>' +
+      row.innerHTML = '<div class="legend-row-main"><div class="dot" style="background:'+c.hex+'"></div>' +
         '<div class="name">'+c.label+'</div>' + '<div class="pct">'+pct.toFixed(0)+'%</div>' +
         '<div class="amt">'+fmtEUR(t.val)+'</div>' +
-        '<div class="gain '+(t.pl>=0?'pos':'neg')+'">'+(t.pl>=0?'+':'')+fmtEUR(t.pl)+'</div>';
+        '<div class="gain '+(t.pl>=0?'pos':'neg')+'">'+(t.pl>=0?'+':'')+fmtEUR(t.pl)+'</div></div>' +
+        (rt.cost>0 ? '<div class="legend-row-sub '+(rt.gain>=0?'pos':'neg')+'">Realizada: '+(rt.gain>=0?'+':'')+fmtEUR(rt.gain)+' · '+fmtPct(rt.gainPct)+'</div>' : '');
       legendEl.appendChild(row);
     });
     const propTotals = propertiesTotals();
@@ -616,10 +649,10 @@
       cum += pct;
       const row = document.createElement('div');
       row.className = 'legend-row';
-      row.innerHTML = '<div class="dot" style="background:'+INMUEBLES_HEX+'"></div>' +
+      row.innerHTML = '<div class="legend-row-main"><div class="dot" style="background:'+INMUEBLES_HEX+'"></div>' +
         '<div class="name">Inmuebles</div>' + '<div class="pct">'+pct.toFixed(0)+'%</div>' +
         '<div class="amt">'+fmtEUR(propVal)+'</div>' +
-        '<div class="gain '+(propTotals.pl>=0?'pos':'neg')+'">'+(propTotals.pl>=0?'+':'')+fmtEUR(propTotals.pl)+'</div>';
+        '<div class="gain '+(propTotals.pl>=0?'pos':'neg')+'">'+(propTotals.pl>=0?'+':'')+fmtEUR(propTotals.pl)+'</div></div>';
       legendEl.appendChild(row);
     }
     const ring = document.getElementById('donutRing');
@@ -691,12 +724,14 @@
   function renderCardStats(catKey){
     const container = document.getElementById('card-'+catKey);
     const t = catTotals(catKey);
+    const rt = catRealizedTotals(catKey);
     const statsEl = container.querySelector('.card-stats');
     statsEl.innerHTML =
       '<span>Invertido: <b style="color:var(--ink)">'+fmtEUR(t.inv)+'</b></span>' +
       '<span>Valor: <b style="color:var(--ink)">'+fmtEUR(t.val)+'</b></span>' +
       '<span class="pl '+(t.pl>=0?'pos':'neg')+'">Ganancia: <b>'+(t.pl>=0?'+':'')+fmtEUR(t.pl)+'</b></span>' +
-      '<span class="pl '+(t.pl>=0?'pos':'neg')+'">'+fmtPct(t.plPct)+'</span>';
+      '<span class="pl '+(t.pl>=0?'pos':'neg')+'">'+fmtPct(t.plPct)+'</span>' +
+      (rt.cost>0 ? '<span class="pl '+(rt.gain>=0?'pos':'neg')+'">Realizada: <b>'+(rt.gain>=0?'+':'')+fmtEUR(rt.gain)+'</b> ('+fmtPct(rt.gainPct)+')</span>' : '');
   }
 
   function buildCards(){

@@ -111,6 +111,14 @@ GitHub Pages, ya configurado: **https://lukas612.github.io/test/**
   categoría (incluye Inmuebles). Es la misma plusvalía latente (no vendida)
   que ya se ve en cada tarjeta de Movimientos, solo que agregada por titular
   en vez de por categoría.
+- **Plusvalía realizada también por titular y por producto**: además de la
+  latente, si un titular o una categoría tiene alguna fila marcada como
+  Vendida, se muestra también su ganancia/pérdida realizada (Importe venta −
+  Invertido) en € y %, en una segunda línea — solo aparece cuando hay algo
+  vendido, para no ensuciar la vista en el caso normal. Las tarjetas de cada
+  categoría en Movimientos también muestran ahora "Realizada" junto a
+  "Ganancia" (latente) cuando aplica. Los inmuebles no tienen este concepto
+  (no se modela la venta de una propiedad).
 - **Exportar CSV**: botón en el footer de Movimientos, descarga todas las
   filas de todas las categorías (`;` como separador, BOM UTF-8, pensado para
   Excel en español).
