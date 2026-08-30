@@ -80,6 +80,9 @@
   .spec-item .t{ font-size: 13px; font-weight:600; color: var(--ink); }
   .spec-item .d{ font-size: 12px; color: var(--ink-dim); font-family:'IBM Plex Mono', monospace; margin-top:2px;}
   .spec-item .note{ font-size: 11.5px; color: var(--ink-faint); margin-top: 3px; max-width: 240px; }
+  .spec-item .gain{ font-size: 12px; font-family:'IBM Plex Mono', monospace; margin-top:2px; }
+  .spec-item .gain.pos{ color: var(--positive); }
+  .spec-item .gain.neg{ color: var(--negative); }
 
   .stat-row{ display:flex; gap:16px; flex-wrap:wrap; margin-bottom: 40px; }
   .stat-box{ flex:1; min-width: 180px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; }
@@ -106,6 +109,9 @@
   .legend-row .name{ flex:1; color: var(--ink); }
   .legend-row .pct{ font-family:'IBM Plex Mono', monospace; color: var(--ink-dim); width:48px; text-align:right; }
   .legend-row .amt{ font-family:'IBM Plex Mono', monospace; color: var(--ink); width:110px; text-align:right; }
+  .legend-row .gain{ font-family:'IBM Plex Mono', monospace; width:100px; text-align:right; }
+  .legend-row .gain.pos{ color: var(--positive); }
+  .legend-row .gain.neg{ color: var(--negative); }
 
   .cards{ display:flex; flex-direction:column; gap: 22px; margin-bottom: 30px; }
   .card{ background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 20px 22px 16px; border-top: 3px solid var(--cat-color, var(--gold)); }
@@ -467,6 +473,27 @@
     state.inmuebles.forEach(p=>{ out[p.veh||VEHS[0].key] = (out[p.veh||VEHS[0].key]||0) + (Number(p.valorActual)||0); });
     return out;
   }
+  function vehPLTotals(){
+    const out = {};
+    VEHS.forEach(v=>{ out[v.key] = { inv:0, val:0 }; });
+    CATS.forEach(c=>{
+      (state[c.key]||[]).forEach(r=>{
+        if(r.vendido) return;
+        const veh = r.veh || VEHS[0].key;
+        if(!out[veh]) out[veh] = { inv:0, val:0 };
+        out[veh].inv += toEUR(r.inv, r.cur);
+        out[veh].val += toEUR(r.val, r.cur);
+      });
+    });
+    state.inmuebles.forEach(p=>{
+      const veh = p.veh || VEHS[0].key;
+      if(!out[veh]) out[veh] = { inv:0, val:0 };
+      out[veh].inv += Number(p.precioCompra)||0;
+      out[veh].val += Number(p.valorActual)||0;
+    });
+    Object.values(out).forEach(t=>{ t.pl = t.val - t.inv; t.plPct = t.inv>0 ? (t.pl/t.inv*100) : 0; });
+    return out;
+  }
   function realizedTotals(){
     let cost=0, proceeds=0;
     CATS.forEach(cat=>{
@@ -542,6 +569,7 @@
     });
 
     const vt = vehTotals();
+    const vpl = vehPLTotals();
     const specSegEl = document.getElementById('specTitular');
     const specLegendEl = document.getElementById('specTitularLegend');
     specSegEl.innerHTML = '';
@@ -549,6 +577,7 @@
     VEHS.forEach(v=>{
       const val = vt[v.key] || 0;
       const pct = totalVal>0 ? (val/totalVal*100) : 0;
+      const t = vpl[v.key] || { inv:0, val:0, pl:0, plPct:0 };
       const seg = document.createElement('div');
       seg.className = 'seg';
       seg.style.background = v.hex;
@@ -558,6 +587,7 @@
       item.className = 'spec-item';
       item.innerHTML = '<div class="spec-dot" style="background:'+v.hex+'"></div>' +
         '<div><div class="t">'+v.label+'</div><div class="d">'+fmtEUR(val)+' · '+pct.toFixed(0)+'%</div>' +
+        '<div class="gain '+(t.pl>=0?'pos':'neg')+'">'+(t.pl>=0?'+':'')+fmtEUR(t.pl)+' · '+fmtPct(t.plPct)+'</div>' +
         (v.note ? '<div class="note">'+v.note+'</div>' : '') + '</div>';
       specLegendEl.appendChild(item);
     });
@@ -574,10 +604,12 @@
       row.className = 'legend-row';
       row.innerHTML = '<div class="dot" style="background:'+c.hex+'"></div>' +
         '<div class="name">'+c.label+'</div>' + '<div class="pct">'+pct.toFixed(0)+'%</div>' +
-        '<div class="amt">'+fmtEUR(t.val)+'</div>';
+        '<div class="amt">'+fmtEUR(t.val)+'</div>' +
+        '<div class="gain '+(t.pl>=0?'pos':'neg')+'">'+(t.pl>=0?'+':'')+fmtEUR(t.pl)+'</div>';
       legendEl.appendChild(row);
     });
-    const propVal = propertiesTotals().val;
+    const propTotals = propertiesTotals();
+    const propVal = propTotals.val;
     if(propVal > 0){
       const pct = totalVal>0 ? (propVal/totalVal*100) : 0;
       stops.push(INMUEBLES_HEX + ' ' + cum.toFixed(2) + '% ' + (cum+pct).toFixed(2) + '%');
@@ -586,7 +618,8 @@
       row.className = 'legend-row';
       row.innerHTML = '<div class="dot" style="background:'+INMUEBLES_HEX+'"></div>' +
         '<div class="name">Inmuebles</div>' + '<div class="pct">'+pct.toFixed(0)+'%</div>' +
-        '<div class="amt">'+fmtEUR(propVal)+'</div>';
+        '<div class="amt">'+fmtEUR(propVal)+'</div>' +
+        '<div class="gain '+(propTotals.pl>=0?'pos':'neg')+'">'+(propTotals.pl>=0?'+':'')+fmtEUR(propTotals.pl)+'</div>';
       legendEl.appendChild(row);
     }
     const ring = document.getElementById('donutRing');

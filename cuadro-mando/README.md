@@ -102,6 +102,15 @@ GitHub Pages, ya configurado: **https://lukas612.github.io/test/**
   fila está marcada como Vendida), convertido a EUR si la fila es en USD; se
   actualiza en vivo al editar Invertido/Valor/Importe venta/Moneda o al
   cambiar el tipo de cambio.
+- **Ganancia/pérdida también en el Panel, por titular y por producto**: el
+  Panel principal se había quedado corto — solo enseñaba % en el bloque de
+  Rendimiento (global). Ahora "Distribución por titular" añade una línea con
+  el importe y % de plusvalía de cada titular (Lukas solo, Lukas & Adriana
+  conjunta, Whitenut, Lovicka — sumando también sus inmuebles), y
+  "Distribución por producto" añade una columna con el importe de cada
+  categoría (incluye Inmuebles). Es la misma plusvalía latente (no vendida)
+  que ya se ve en cada tarjeta de Movimientos, solo que agregada por titular
+  en vez de por categoría.
 - **Exportar CSV**: botón en el footer de Movimientos, descarga todas las
   filas de todas las categorías (`;` como separador, BOM UTF-8, pensado para
   Excel en español).
