@@ -119,6 +119,18 @@ GitHub Pages, ya configurado: **https://lukas612.github.io/test/**
   categoría en Movimientos también muestran ahora "Realizada" junto a
   "Ganancia" (latente) cuando aplica. Los inmuebles no tienen este concepto
   (no se modela la venta de una propiedad).
+- **Patrimonio de inversión e Inmuebles, separados en la cabecera del
+  Panel**: como el valor de los inmuebles (ilíquido, normalmente el bloque
+  más grande) mezclado con el de la cartera de inversión hacía el número
+  "Patrimonio total" poco útil de un vistazo, ahora la cabecera muestra el
+  total combinado en pequeño arriba y, debajo, dos bloques independientes —
+  "Patrimonio de inversión" (Acciones, ETF, Indexa, Crypto, Efectivo,
+  Pensiones, Crowdfunding) y "Patrimonio inmobiliario" (Inmuebles) — cada
+  uno con su propio invertido/comprado y su propia plusvalía en € y %. El
+  bloque "Rendimiento" de debajo (Plusvalía latente/realizada/Retorno total)
+  pasa a referirse solo a la inversión (los inmuebles ya tienen su plusvalía
+  en su propio bloque arriba), por eso ahora se titula "Rendimiento de la
+  inversión".
 - **Exportar CSV**: botón en el footer de Movimientos, descarga todas las
   filas de todas las categorías (`;` como separador, BOM UTF-8, pensado para
   Excel en español).

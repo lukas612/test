@@ -31,15 +31,29 @@
   .view{ display:none; }
   .view.active{ display:block; }
 
-  .hero{ display:flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 20px; padding-bottom: 20px; margin-bottom: 14px; }
-  .hero-num{ font-family: 'Fraunces', serif; font-weight: 600; font-size: clamp(40px, 7vw, 64px); line-height: 1; letter-spacing: -0.01em; margin: 0; }
+  .hero-top{ display:flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 20px; margin-bottom: 22px; }
+  .hero-total-label{ font-family:'IBM Plex Mono', monospace; font-size: 11px; letter-spacing:0.08em; text-transform:uppercase; color: var(--ink-faint); margin:0; }
+  .hero-total-num{ font-family: 'Fraunces', serif; font-weight: 600; font-size: clamp(36px, 6vw, 56px); line-height: 1; letter-spacing: -0.01em; margin: 6px 0 0; }
   .hero-sub{ font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: var(--ink-dim); margin-top: 10px; }
   .hero-sub b{ color: var(--ink); font-weight: 500; }
-  .hero-delta{ text-align: right; display:flex; flex-direction:column; align-items:flex-end; gap:10px; }
+  .hero-sub .pos{ color: var(--positive); }
+  .hero-sub .neg{ color: var(--negative); }
+
+  .hero-split{ display:flex; gap:20px; flex-wrap:wrap; margin-bottom: 30px; }
+  .hero-block{ flex:1; min-width: 260px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 20px 22px; border-top: 3px solid var(--line); }
+  .hero-block--inv{ border-top-color: var(--gold); }
+  .hero-block--prop{ border-top-color: var(--c-inmuebles); }
+  .hero-block-label{ font-family:'IBM Plex Mono', monospace; font-size: 11px; letter-spacing:0.08em; text-transform:uppercase; color: var(--ink-faint); margin:0; }
+  .hero-block-num{ font-family: 'Fraunces', serif; font-weight: 600; font-size: clamp(26px, 4vw, 34px); line-height:1; margin: 8px 0 0; }
+  .hero-block-sub{ font-family:'IBM Plex Mono', monospace; font-size: 12.5px; color: var(--ink-dim); margin-top: 8px; }
+  .hero-block-sub b{ color: var(--ink); font-weight: 500; }
+  .hero-block-delta{ display:flex; align-items:center; gap:10px; margin-top: 12px; flex-wrap:wrap; }
+
   .delta-pill{ font-family: 'IBM Plex Mono', monospace; font-size: 20px; font-weight: 600; padding: 6px 14px; border-radius: 100px; display: inline-block; }
+  .delta-pill.sm{ font-size: 13px; padding: 4px 11px; }
   .delta-pill.pos{ color: var(--positive); background: rgba(95,163,122,0.12); }
   .delta-pill.neg{ color: var(--negative); background: rgba(193,88,79,0.12); }
-  .delta-label{ font-size: 11px; color: var(--ink-faint); margin-top: 6px; font-family:'IBM Plex Mono', monospace; }
+  .delta-label{ font-size: 11px; color: var(--ink-faint); font-family:'IBM Plex Mono', monospace; }
 
   .btn{ background: var(--surface-2); border: 1px solid var(--line); color: var(--ink-dim); font-family:'IBM Plex Mono', monospace; font-size: 12px; padding: 8px 14px; border-radius: 6px; cursor:pointer; }
   .btn:hover{ border-color: var(--gold-dim); color: var(--gold); }
@@ -156,8 +170,8 @@
   .reset-btn:hover{ border-color: var(--negative); color: var(--negative); }
 
   @media (max-width: 640px){
-    .hero{ flex-direction: column; align-items:flex-start; }
-    .hero-delta{ align-items:flex-start; text-align:left; }
+    .hero-top{ flex-direction: column; align-items:flex-start; }
+    .hero-split{ flex-direction: column; }
     .card-stats{ font-size: 12px; gap: 12px; }
     .donut-holder{ width:150px; height:150px; }
     .donut-holder .ring{ width:150px; height:150px; }
@@ -209,19 +223,37 @@
   <!-- ================= PANEL (visualización) ================= -->
   <div class="view active" id="viewPanel">
 
-    <div class="hero">
+    <div class="hero-top">
       <div>
-        <p class="hero-num" id="heroTotal">€0</p>
-        <p class="hero-sub">Invertido <b id="heroInvertido">€0</b> · actualizado <b id="heroDate">—</b></p>
+        <p class="hero-total-label">Patrimonio total</p>
+        <p class="hero-total-num" id="heroTotal">€0</p>
+        <p class="hero-sub">actualizado <b id="heroDate">—</b> · <span id="heroTotalPct" class="pos">+0,0%</span> global</p>
       </div>
-      <div class="hero-delta">
-        <span class="delta-pill pos" id="heroDelta">+0,0%</span>
-        <div class="delta-label" id="heroDeltaAbs">+€0 plusvalía</div>
-        <button class="btn primary" id="goToMovimientos">+ Añadir inversión</button>
+      <button class="btn primary" id="goToMovimientos">+ Añadir inversión</button>
+    </div>
+
+    <div class="hero-split">
+      <div class="hero-block hero-block--inv">
+        <p class="hero-block-label">Patrimonio de inversión</p>
+        <p class="hero-block-num" id="heroInvTotal">€0</p>
+        <p class="hero-block-sub">Invertido <b id="heroInvInvertido">€0</b></p>
+        <div class="hero-block-delta">
+          <span class="delta-pill sm pos" id="heroInvDelta">+0,0%</span>
+          <span class="delta-label" id="heroInvDeltaAbs">+€0</span>
+        </div>
+      </div>
+      <div class="hero-block hero-block--prop">
+        <p class="hero-block-label">Patrimonio inmobiliario</p>
+        <p class="hero-block-num" id="heroPropTotal">€0</p>
+        <p class="hero-block-sub">Comprado <b id="heroPropCompra">€0</b></p>
+        <div class="hero-block-delta">
+          <span class="delta-pill sm pos" id="heroPropDelta">+0,0%</span>
+          <span class="delta-label" id="heroPropDeltaAbs">+€0</span>
+        </div>
       </div>
     </div>
 
-    <p class="section-label">Rendimiento</p>
+    <p class="section-label">Rendimiento de la inversión</p>
     <div class="stat-row">
       <div class="stat-box">
         <div class="stat-label">Plusvalía latente</div>
@@ -547,27 +579,42 @@
 
   function renderSummary(){
     const g = totalPatrimonio();
+    const gc = grandTotals();
+    const gp = propertiesTotals();
+
     document.getElementById('heroTotal').textContent = fmtEUR(g.val);
-    document.getElementById('heroInvertido').textContent = fmtEUR(g.inv);
     document.getElementById('heroDate').textContent = new Date().toLocaleDateString('es-ES', { day:'2-digit', month:'short', year:'numeric' });
-    const deltaEl = document.getElementById('heroDelta');
-    deltaEl.textContent = fmtPct(g.plPct);
-    deltaEl.className = 'delta-pill ' + (g.pl >= 0 ? 'pos' : 'neg');
-    document.getElementById('heroDeltaAbs').textContent = (g.pl>=0?'+':'') + fmtEUR(g.pl) + ' plusvalía';
+    const heroTotalPctEl = document.getElementById('heroTotalPct');
+    heroTotalPctEl.textContent = fmtPct(g.plPct);
+    heroTotalPctEl.className = g.pl >= 0 ? 'pos' : 'neg';
+
+    document.getElementById('heroInvTotal').textContent = fmtEUR(gc.val);
+    document.getElementById('heroInvInvertido').textContent = fmtEUR(gc.inv);
+    const invDeltaEl = document.getElementById('heroInvDelta');
+    invDeltaEl.textContent = fmtPct(gc.plPct);
+    invDeltaEl.className = 'delta-pill sm ' + (gc.pl >= 0 ? 'pos' : 'neg');
+    document.getElementById('heroInvDeltaAbs').textContent = (gc.pl>=0?'+':'') + fmtEUR(gc.pl) + ' plusvalía';
+
+    document.getElementById('heroPropTotal').textContent = fmtEUR(gp.val);
+    document.getElementById('heroPropCompra').textContent = fmtEUR(gp.inv);
+    const propDeltaEl = document.getElementById('heroPropDelta');
+    propDeltaEl.textContent = fmtPct(gp.plPct);
+    propDeltaEl.className = 'delta-pill sm ' + (gp.pl >= 0 ? 'pos' : 'neg');
+    document.getElementById('heroPropDeltaAbs').textContent = (gp.pl>=0?'+':'') + fmtEUR(gp.pl) + ' plusvalía';
 
     const rt = realizedTotals();
     const latenteEl = document.getElementById('statLatente');
-    latenteEl.textContent = (g.pl>=0?'+':'') + fmtEUR(g.pl);
-    latenteEl.className = 'stat-value ' + (g.pl>=0?'pos':'neg');
-    document.getElementById('statLatentePct').textContent = fmtPct(g.plPct) + ' sobre invertido activo';
+    latenteEl.textContent = (gc.pl>=0?'+':'') + fmtEUR(gc.pl);
+    latenteEl.className = 'stat-value ' + (gc.pl>=0?'pos':'neg');
+    document.getElementById('statLatentePct').textContent = fmtPct(gc.plPct) + ' sobre invertido activo';
 
     const realizadaEl = document.getElementById('statRealizada');
     realizadaEl.textContent = (rt.gain>=0?'+':'') + fmtEUR(rt.gain);
     realizadaEl.className = 'stat-value ' + (rt.gain>=0?'pos':'neg');
     document.getElementById('statRealizadaPct').textContent = fmtPct(rt.gainPct) + ' sobre coste vendido';
 
-    const totalGain = g.pl + rt.gain;
-    const totalCost = g.inv + rt.cost;
+    const totalGain = gc.pl + rt.gain;
+    const totalCost = gc.inv + rt.cost;
     const totalPct = totalCost>0 ? (totalGain/totalCost*100) : 0;
     const totalEl = document.getElementById('statTotal');
     totalEl.textContent = (totalGain>=0?'+':'') + fmtEUR(totalGain);
