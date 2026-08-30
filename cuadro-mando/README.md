@@ -83,17 +83,63 @@ GitHub Pages, ya configurado: **https://lukas612.github.io/test/**
   key tenía lectura/escritura total; ahora hace falta la cuenta autorizada.
 - **Nuevo titular**: "Lukas & Adriana" (titularidad conjunta), junto a Lukas
   personal, Whitenut y Lovicka.
-- **Nueva categoría**: Crypto (Activo + Exchange/Wallet), contabilizada como
-  líquida en el espectro de liquidez.
+- **Nuevas categorías**: Crypto (Activo + Exchange/Wallet) y Efectivo —
+  ambas cuentan como líquidas en el espectro de liquidez. Al marcar una fila
+  como Vendida (con Importe venta > 0) se genera automáticamente una fila en
+  Efectivo por ese importe, para que el dinero de una venta no desaparezca
+  del patrimonio total.
+- **Pestaña Inmuebles**: ficha por propiedad (precio de compra, valor
+  actual) + registro mensual de alquiler/gastos por inmueble. El valor de
+  cada inmueble suma al patrimonio total y tiene su propio bucle
+  "Bloqueado · inmobiliario" en el espectro de liquidez.
 - **Evolución del patrimonio**: gráfico de línea en el Panel con el histórico
   de `valor_total` guardado en `portfolio_snapshots`. Con menos de 2 puntos
   muestra un aviso de "aún no hay histórico" en vez de un gráfico vacío.
+- **Exportar CSV**: botón en el footer de Movimientos, descarga todas las
+  filas de todas las categorías (`;` como separador, BOM UTF-8, pensado para
+  Excel en español).
+- **Sincronización automática con Indexa Capital** — ver sección propia más
+  abajo.
 - El panel "Sincronización con Supabase" ya no permite pegar una URL/clave a
   mano (ya no tenía sentido con RLS atado a una cuenta fija); solo queda
   "Sincronizar ahora".
 - El fallback de guardado local pasó de `window.storage` (una API que solo
   existe dentro del entorno de artifacts de claude.ai, nunca funcionó fuera
   de ahí) a `localStorage` real del navegador.
+
+## Sincronización con Indexa Capital (manual + automática diaria)
+
+Indexa publica un token personal de solo lectura (Configuración de usuario →
+Aplicaciones en indexacapital.com) pensado justo para esto. El dashboard lo
+usa para traer valor actual + invertido de las 2 cuentas "mutual" y las 2 de
+pensiones/plan de empleo, sin que haya que teclearlos a mano.
+
+- **Edge Function `indexa-sync`**: guarda el token de Indexa del lado del
+  servidor (nunca en el HTML público), consulta
+  `GET /accounts/{account_number}/performance` de la API de Indexa para cada
+  cuenta, y escribe directamente en `portfolio_holdings` (usando la
+  `service_role` key, que solo existe dentro de la función) emparejando por
+  el número de cuenta entre paréntesis en el Concepto/Plan — así una
+  re-sincronización actualiza la fila existente en vez de duplicarla.
+- **Botón manual**: "Actualizar desde Indexa" en Movimientos, llama a la
+  función con la sesión del usuario logueado.
+- **Cron diario**: `pg_cron` (extensión activada) llama a la misma función
+  todos los días a las **06:00 UTC**, sin necesidad de tener el dashboard
+  abierto. El job se llama `indexa-daily-sync`
+  (`select * from cron.job where jobname = 'indexa-daily-sync';` para verlo,
+  `select cron.alter_job(job_id, schedule => '...')` para cambiar la
+  frecuencia — cualquier expresión cron vale, p. ej. `0 6 */3 * *` para cada
+  3 días).
+- **Autenticación del cron**: como no hay usuario logueado disparando el
+  cron, la función acepta también un secreto compartido
+  (`X-Cron-Secret`) guardado cifrado en Supabase Vault
+  (`vault.decrypted_secrets`, nombre `indexa_cron_secret`) además de la
+  sesión de usuario normal. Verificado: sin credenciales → 403; secreto
+  incorrecto → 403; secreto correcto o sesión real → 200 y escribe en la
+  tabla.
+- Los planes de pensión de Bankinter que ya tenías metidos a mano no se
+  tocan — el emparejamiento es solo por el número de cuenta de Indexa entre
+  paréntesis, así que conviven sin pisarse.
 
 ## Seguridad — pendiente de tu parte
 

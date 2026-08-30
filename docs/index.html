@@ -1049,31 +1049,16 @@
     try{
       const res = await fetch(supabaseConfig.url + '/functions/v1/indexa-sync', { headers: authHeaders() });
       if(!res.ok){ throw new Error('HTTP ' + res.status); }
-      const { accounts } = await res.json();
-      let updated = 0, failed = 0;
-      accounts.forEach(acc=>{
-        if(acc.error){ failed++; return; }
-        const cat = CATS.find(c=>c.key===acc.kind);
-        if(!cat) return;
-        const rows = state[acc.kind];
-        const tag = '(' + acc.account_number + ')';
-        let row = rows.find(r => (r.a||'').includes(tag));
-        if(!row){ row = blankRow(cat); rows.push(row); }
-        row.a = acc.label + ' ' + tag;
-        if(acc.entidad && cat.cols[1]) row.b = acc.entidad;
-        row.veh = acc.titular;
-        row.cur = 'EUR';
-        row.inv = acc.invertido;
-        row.val = acc.valorActual;
-        row.fecha = acc.fecha;
-        updated++;
-      });
+      const { accounts, updated, failed } = await res.json();
+      // La Edge Function ya escribió en Supabase (también la usa el cron diario sin navegador
+      // abierto), así que aquí solo recargamos el estado en vez de volver a construirlo a mano.
+      const rows = await supabaseGet();
+      state = deserializeRows(rows);
+      document.getElementById('fxRate').value = state.fx;
       buildCards(); renderSummary();
-      clearTimeout(saveTimer);
       try{ localStorage.setItem('portfolio-data', JSON.stringify(state)); }catch(e){}
-      if(currentSession){ await supabasePost(serializeRows()); }
-      setSyncStatus('Indexa actualizado: ' + updated + ' cuenta(s)' + (failed ? ', ' + failed + ' con error' : '') + ' · guardado', failed ? 'err' : 'ok');
-    }catch(e){ setSyncStatus('Error al consultar/guardar Indexa (' + e.message + ')', 'err'); }
+      setSyncStatus('Indexa actualizado: ' + updated + ' cuenta(s)' + (failed ? ', ' + failed + ' con error' : ''), failed ? 'err' : 'ok');
+    }catch(e){ setSyncStatus('Error al consultar Indexa (' + e.message + ')', 'err'); }
   });
 
   function showApp(){
