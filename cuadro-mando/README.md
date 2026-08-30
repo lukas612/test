@@ -140,6 +140,19 @@ pensiones/plan de empleo, sin que haya que teclearlos a mano.
 - Los planes de pensión de Bankinter que ya tenías metidos a mano no se
   tocan — el emparejamiento es solo por el número de cuenta de Indexa entre
   paréntesis, así que conviven sin pisarse.
+- **Snapshot diario encadenado**: al final de la misma ejecución (después de
+  escribir los datos de Indexa, no en un cron aparte que pudiera pisarse con
+  éste), la función recalcula el patrimonio total — con la misma lógica que
+  `totalPatrimonio()`/`realizedTotals()` del dashboard (conversión USD→EUR
+  con el tipo de cambio guardado, exclusión de filas vendidas del total
+  activo, inmuebles incluidos) — y hace upsert en `portfolio_snapshots` para
+  la fecha de hoy. Así el gráfico de evolución del Panel tiene un punto
+  todos los días aunque nadie abra el dashboard. Si en el futuro se añade
+  Interactive Brokers (o cualquier otra fuente), su sincronización va antes
+  de este bloque, en la misma función, para que el snapshot del día
+  siempre sea posterior a todas las fuentes automáticas.
+  Verificado con datos reales: snapshot del día con desglose por categoría
+  y titular correcto.
 
 ## Seguridad — pendiente de tu parte
 
