@@ -115,7 +115,9 @@
   .card-stats .pl.pos{ color: var(--positive); }
   .card-stats .pl.neg{ color: var(--negative); }
 
-  .table-scroll{ overflow-x: auto; }
+  .table-scroll{ overflow-x: auto; -webkit-overflow-scrolling: touch; position: relative; }
+  .table-scroll::after{ content:''; position:absolute; top:0; right:0; bottom:0; width:28px; background: linear-gradient(to right, transparent, var(--surface)); pointer-events:none; opacity:1; transition: opacity 150ms ease; }
+  .table-scroll.at-end::after{ opacity:0; }
   table{ width:100%; border-collapse: collapse; min-width: 760px; }
   thead th{ text-align:left; font-family:'IBM Plex Mono', monospace; font-size: 10px; text-transform:uppercase; letter-spacing:0.05em; color: var(--ink-faint); font-weight:500; padding: 6px 7px; border-bottom: 1px solid var(--line); white-space:nowrap; }
   thead th.num{ text-align:right; }
@@ -148,6 +150,10 @@
     .donut-holder .ring{ width:150px; height:150px; }
     .donut-hole{ top:19px; left:19px; width:112px; height:112px; }
     #sheetsUrl{ min-width: 100%; }
+    td.vendido input[type=checkbox]{ width:20px; height:20px; }
+    .del-btn, .del-btn-prop{ padding: 8px 10px; font-size:17px; }
+    .tabs{ flex-wrap: wrap; }
+    .tab-btn{ flex: 1 1 auto; text-align:center; }
   }
   @media (prefers-reduced-motion: reduce){ .spectrum .seg{ transition: none; } }
 
@@ -578,6 +584,7 @@
     const ring = document.getElementById('donutRing');
     ring.style.background = stops.length ? ('conic-gradient(' + stops.join(', ') + ')') : 'var(--surface-2)';
     document.getElementById('donutCenter').textContent = fmtEUR(g.val);
+    refreshScrollFades();
   }
 
   function vehOptions(sel){ return VEHS.map(v=>'<option value="'+v.key+'" '+(v.key===sel?'selected':'')+'>'+v.label+'</option>').join(''); }
@@ -619,6 +626,18 @@
       if(cell) cell.textContent = fmtEUR(toEUR(row.val, row.cur));
     });
   }
+
+  /* ---------- Aviso de scroll horizontal en tablas (móvil) ---------- */
+  function updateScrollFade(el){
+    const atEnd = el.scrollLeft + el.clientWidth >= el.scrollWidth - 2;
+    el.classList.toggle('at-end', atEnd);
+  }
+  function refreshScrollFades(){
+    document.querySelectorAll('.table-scroll').forEach(updateScrollFade);
+  }
+  document.addEventListener('scroll', (e)=>{
+    if(e.target && e.target.classList && e.target.classList.contains('table-scroll')) updateScrollFade(e.target);
+  }, true);
 
   function renderCardStats(catKey){
     const container = document.getElementById('card-'+catKey);
@@ -794,6 +813,7 @@
       document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
       btn.classList.add('active');
       document.getElementById(btn.dataset.view).classList.add('active');
+      refreshScrollFades();
     });
   });
   document.getElementById('goToMovimientos').addEventListener('click', ()=>{
@@ -801,6 +821,7 @@
     document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
     document.querySelector('.tab-btn[data-view="viewMovimientos"]').classList.add('active');
     document.getElementById('viewMovimientos').classList.add('active');
+    refreshScrollFades();
     document.getElementById('addFormPanel').scrollIntoView({ behavior:'smooth', block:'start' });
     afC1.focus();
   });
@@ -1047,9 +1068,12 @@
         row.fecha = acc.fecha;
         updated++;
       });
-      buildCards(); renderSummary(); scheduleSave();
-      setSyncStatus('Indexa actualizado: ' + updated + ' cuenta(s)' + (failed ? ', ' + failed + ' con error' : ''), failed ? 'err' : 'ok');
-    }catch(e){ setSyncStatus('Error al consultar Indexa (' + e.message + ')', 'err'); }
+      buildCards(); renderSummary();
+      clearTimeout(saveTimer);
+      try{ localStorage.setItem('portfolio-data', JSON.stringify(state)); }catch(e){}
+      if(currentSession){ await supabasePost(serializeRows()); }
+      setSyncStatus('Indexa actualizado: ' + updated + ' cuenta(s)' + (failed ? ', ' + failed + ' con error' : '') + ' · guardado', failed ? 'err' : 'ok');
+    }catch(e){ setSyncStatus('Error al consultar/guardar Indexa (' + e.message + ')', 'err'); }
   });
 
   function showApp(){
