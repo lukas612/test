@@ -95,6 +95,13 @@ GitHub Pages, ya configurado: **https://lukas612.github.io/test/**
 - **Evolución del patrimonio**: gráfico de línea en el Panel con el histórico
   de `valor_total` guardado en `portfolio_snapshots`. Con menos de 2 puntos
   muestra un aviso de "aún no hay histórico" en vez de un gráfico vacío.
+- **Ganancia/pérdida en €**: además del % que ya había, tanto la cabecera de
+  cada categoría (Acciones, ETF, Indexa, Crypto...) como cada fila individual
+  muestran ahora el importe absoluto de plusvalía/minusvalía. Por fila, se
+  calcula como Valor actual − Invertido (o Importe venta − Invertido si la
+  fila está marcada como Vendida), convertido a EUR si la fila es en USD; se
+  actualiza en vivo al editar Invertido/Valor/Importe venta/Moneda o al
+  cambiar el tipo de cambio.
 - **Exportar CSV**: botón en el footer de Movimientos, descarga todas las
   filas de todas las categorías (`;` como separador, BOM UTF-8, pensado para
   Excel en español).

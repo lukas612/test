@@ -132,6 +132,9 @@
   td.veh, td.cur{ width: 110px; }
   td.fecha{ width: 130px; }
   td.eur{ text-align:right; width:105px; color: var(--ink-dim); font-family:'IBM Plex Mono', monospace; font-size:12.5px; }
+  td.gain{ text-align:right; width:105px; font-family:'IBM Plex Mono', monospace; font-size:12.5px; }
+  td.gain.pos{ color: var(--positive); }
+  td.gain.neg{ color: var(--negative); }
   td.del{ width: 28px; text-align:center; }
   .del-btn, .del-btn-prop{ background:none; border:none; color: var(--ink-faint); cursor:pointer; font-size:15px; line-height:1; padding: 4px 6px; border-radius:4px; }
   .del-btn:hover, .del-btn-prop:hover{ color: var(--negative); background: rgba(193,88,79,0.1); }
@@ -445,6 +448,11 @@
   }
   function fmtPct(n){ const s = n > 0 ? '+' : ''; return s + n.toLocaleString('es-ES', { maximumFractionDigits:1, minimumFractionDigits:1 }) + '%'; }
   function toEUR(amount, cur){ return cur === 'USD' ? (Number(amount)||0) * (state.fx || 0) : (Number(amount)||0); }
+  function rowGain(row){
+    const inv = toEUR(row.inv, row.cur);
+    const out = row.vendido ? toEUR(row.importeVenta, row.cur) : toEUR(row.val, row.cur);
+    return out - inv;
+  }
 
   function catTotals(key){
     const rows = state[key] || [];
@@ -607,6 +615,8 @@
       cells += '<td class="num"><input class="cell num" data-cat="'+catKey+'" data-idx="'+idx+'" data-field="inv" type="number" step="0.01" value="'+(row.inv||'')+'" placeholder="0"></td>';
       cells += '<td class="num"><input class="cell num" data-cat="'+catKey+'" data-idx="'+idx+'" data-field="val" type="number" step="0.01" value="'+(row.val||'')+'" placeholder="0"></td>';
       cells += '<td class="eur" data-eurcell="'+catKey+'-'+idx+'">'+fmtEUR(toEUR(row.val,row.cur))+'</td>';
+      const gain = rowGain(row);
+      cells += '<td class="gain '+(gain>=0?'pos':'neg')+'" data-gaincell="'+catKey+'-'+idx+'">'+(gain>=0?'+':'')+fmtEUR(gain)+'</td>';
       if(cat.hasDate){
         cells += '<td><input class="cell date" data-cat="'+catKey+'" data-idx="'+idx+'" data-field="venc" type="text" value="'+escapeHtml(row.venc||'')+'" placeholder="mm/aaaa"></td>';
       }
@@ -624,6 +634,12 @@
     state[catKey].forEach((row, idx)=>{
       const cell = document.querySelector('[data-eurcell="'+catKey+'-'+idx+'"]');
       if(cell) cell.textContent = fmtEUR(toEUR(row.val, row.cur));
+      const gainCell = document.querySelector('[data-gaincell="'+catKey+'-'+idx+'"]');
+      if(gainCell){
+        const gain = rowGain(row);
+        gainCell.textContent = (gain>=0?'+':'') + fmtEUR(gain);
+        gainCell.className = 'gain ' + (gain>=0?'pos':'neg');
+      }
     });
   }
 
@@ -646,6 +662,7 @@
     statsEl.innerHTML =
       '<span>Invertido: <b style="color:var(--ink)">'+fmtEUR(t.inv)+'</b></span>' +
       '<span>Valor: <b style="color:var(--ink)">'+fmtEUR(t.val)+'</b></span>' +
+      '<span class="pl '+(t.pl>=0?'pos':'neg')+'">Ganancia: <b>'+(t.pl>=0?'+':'')+fmtEUR(t.pl)+'</b></span>' +
       '<span class="pl '+(t.pl>=0?'pos':'neg')+'">'+fmtPct(t.plPct)+'</span>';
   }
 
@@ -659,7 +676,7 @@
       card.style.setProperty('--cat-color', cat.color);
       let headers = '<th>Titular</th><th>Fecha</th>';
       cat.cols.forEach(([f,label])=>{ headers += '<th>'+label+'</th>'; });
-      headers += '<th>Moneda</th><th class="num">Invertido</th><th class="num">Valor actual</th><th class="num">≈ Valor €</th>';
+      headers += '<th>Moneda</th><th class="num">Invertido</th><th class="num">Valor actual</th><th class="num">≈ Valor €</th><th class="num">Ganancia/Pérdida</th>';
       if(cat.hasDate) headers += '<th>Vencimiento</th>';
       headers += '<th>Vendido</th><th>Fecha venta</th><th class="num">Importe venta</th>';
       headers += '<th></th>';
@@ -1153,7 +1170,7 @@
       const cat = e.target.dataset.cat, idx = Number(e.target.dataset.idx), field = e.target.dataset.field;
       const isNum = field === 'inv' || field === 'val' || field === 'importeVenta';
       state[cat][idx][field] = isNum ? (parseFloat(e.target.value)||0) : e.target.value;
-      if(field === 'val' || field === 'cur') refreshEurCells(cat);
+      if(field === 'val' || field === 'cur' || field === 'inv' || field === 'importeVenta') refreshEurCells(cat);
       renderCardStats(cat); renderSummary(); scheduleSave();
       return;
     }
@@ -1198,6 +1215,7 @@
         moveSaleToEfectivo(CATS.find(c=>c.key===cat), row);
         renderCategory('efectivo');
       }
+      refreshEurCells(cat);
       renderCardStats(cat); renderSummary(); scheduleSave();
     }
   });
