@@ -163,13 +163,30 @@ bloque más, entre el de Indexa y el del snapshot final (ver más abajo).
      (autocontenidas, sin librería externa) en vez de un parser XML completo.
 - **Cuentas mapeadas** (`IB_ACCOUNTS` en la función): `U9489695` e
   `U15958681` → Lukas personal; `U7366051` (alias "Conjunta" en IB) →
-  Lukas & Adriana. Cada cuenta genera una fila en la categoría **Acciones**
-  (`IB Personal Long (U9489695)`, etc.), con Invertido = suma de
-  `costBasisMoney` de sus posiciones convertida a EUR con el tipo de cambio
-  guardado, y Valor actual = el NAV en EUR que ya calcula IB.
-- Verificado con datos reales: 3 cuentas, informe XML de ~93 KB, filas
-  creadas correctamente, y el snapshot del día subió exactamente lo que
-  sumaban las 3 cuentas de IB.
+  Lukas & Adriana.
+- **Una fila por posición, no por cuenta**: cada `OpenPosition` del XML
+  genera su propia fila en **Acciones** (p. ej. `KO (U9489695)`,
+  `OCGN (U15958681)`), con Invertido = `costBasisMoney` y Valor actual =
+  `positionValue`, ambos convertidos a EUR con el tipo de cambio guardado.
+  El campo Broker/Concepto (`campo2`) lleva el nombre de la cuenta (`IB
+  Personal Long`, etc.) para poder identificar de qué cartera viene cada
+  acción. Se emparejan por símbolo + número de cuenta, así que una
+  resincronización actualiza cada posición existente en vez de duplicarla.
+- **Efectivo no invertido**: la NAV de una cuenta de IB no es solo la suma
+  de sus posiciones — también hay saldo en efectivo sin invertir. Para que
+  el patrimonio total no baje al desglosar por posición, cada cuenta genera
+  además una fila en **Efectivo** (`Efectivo IB Personal Long (U9489695)`,
+  etc., campo2 `Interactive Brokers`) con ese saldo, tomado directamente del
+  atributo `cash` del resumen `EquitySummaryByReportDateInBase` (ya viene en
+  la moneda base del informe, sin necesidad de conversión).
+- **Limpieza automática**: en cada sincronización, cualquier fila de
+  Acciones o Efectivo que "pertenezca" a IB (por su campo Broker/Concepto)
+  pero ya no aparezca en el informe actual se borra — cubre tanto posiciones
+  vendidas/cerradas como, en la primera ejecución tras este cambio, las
+  filas agregadas por cuenta del formato anterior.
+- Verificado con datos reales: 3 cuentas, informe XML de ~93 KB, 28
+  posiciones individuales + 3 filas de efectivo creadas correctamente, y el
+  snapshot del día cuadra con la suma de todas ellas.
 
 ## Snapshot diario encadenado
 
