@@ -98,7 +98,8 @@ GitHub Pages, ya configurado: **https://lukas612.github.io/test/**
 - **Exportar CSV**: botón en el footer de Movimientos, descarga todas las
   filas de todas las categorías (`;` como separador, BOM UTF-8, pensado para
   Excel en español).
-- **Sincronización automática con Indexa Capital** — ver sección propia más
+- **Sincronización automática con Indexa Capital e Interactive Brokers**,
+  diaria + botón manual "Actualizar Indexa + IB" — ver secciones propias más
   abajo.
 - El panel "Sincronización con Supabase" ya no permite pegar una URL/clave a
   mano (ya no tenía sentido con RLS atado a una cuenta fija); solo queda
@@ -140,19 +141,49 @@ pensiones/plan de empleo, sin que haya que teclearlos a mano.
 - Los planes de pensión de Bankinter que ya tenías metidos a mano no se
   tocan — el emparejamiento es solo por el número de cuenta de Indexa entre
   paréntesis, así que conviven sin pisarse.
-- **Snapshot diario encadenado**: al final de la misma ejecución (después de
-  escribir los datos de Indexa, no en un cron aparte que pudiera pisarse con
-  éste), la función recalcula el patrimonio total — con la misma lógica que
-  `totalPatrimonio()`/`realizedTotals()` del dashboard (conversión USD→EUR
-  con el tipo de cambio guardado, exclusión de filas vendidas del total
-  activo, inmuebles incluidos) — y hace upsert en `portfolio_snapshots` para
-  la fecha de hoy. Así el gráfico de evolución del Panel tiene un punto
-  todos los días aunque nadie abra el dashboard. Si en el futuro se añade
-  Interactive Brokers (o cualquier otra fuente), su sincronización va antes
-  de este bloque, en la misma función, para que el snapshot del día
-  siempre sea posterior a todas las fuentes automáticas.
-  Verificado con datos reales: snapshot del día con desglose por categoría
-  y titular correcto.
+
+## Sincronización con Interactive Brokers (Flex Web Service)
+
+Misma función `indexa-sync`, mismo botón, mismo cron — IB se añadió como un
+bloque más, entre el de Indexa y el del snapshot final (ver más abajo).
+
+- **Credenciales**: Token + Query ID del *Flex Web Service* de IB
+  (Informes → Consultas Flex → engranaje de "Envío de consultas Flex" →
+  activar el servicio web). Solo visibles desde la cuenta **Maestra** si hay
+  cuentas vinculadas. Guardados en el código de la función, igual que el
+  token de Indexa — no en Vault ni en el cliente.
+- **Flujo** (protocolo Flex Web Service v3, dos pasos):
+  1. `SendRequest` con Token + Query ID → devuelve un `ReferenceCode`.
+  2. `GetStatement` con ese código (reintentos cada 4s hasta 5 veces, IB
+     tarda unos segundos en generar el informe) → XML con `EquitySummaryByReportDateInBase`
+     (NAV en EUR, moneda base) y `OpenPositions` (coste de cada posición,
+     en la moneda original — de momento se asume USD, que es lo único que
+     hay en las 3 cuentas actuales) por cuenta.
+  3. El XML se parsea con regex sobre los atributos de las etiquetas
+     (autocontenidas, sin librería externa) en vez de un parser XML completo.
+- **Cuentas mapeadas** (`IB_ACCOUNTS` en la función): `U9489695` e
+  `U15958681` → Lukas personal; `U7366051` (alias "Conjunta" en IB) →
+  Lukas & Adriana. Cada cuenta genera una fila en la categoría **Acciones**
+  (`IB Personal Long (U9489695)`, etc.), con Invertido = suma de
+  `costBasisMoney` de sus posiciones convertida a EUR con el tipo de cambio
+  guardado, y Valor actual = el NAV en EUR que ya calcula IB.
+- Verificado con datos reales: 3 cuentas, informe XML de ~93 KB, filas
+  creadas correctamente, y el snapshot del día subió exactamente lo que
+  sumaban las 3 cuentas de IB.
+
+## Snapshot diario encadenado
+
+Al final de la misma ejecución (después de escribir los datos de Indexa e
+IB, no en un cron aparte que pudiera pisarse con éste), la función
+recalcula el patrimonio total — con la misma lógica que
+`totalPatrimonio()`/`realizedTotals()` del dashboard (conversión USD→EUR
+con el tipo de cambio guardado, exclusión de filas vendidas del total
+activo, inmuebles incluidos) — y hace upsert en `portfolio_snapshots` para
+la fecha de hoy. Así el gráfico de evolución del Panel tiene un punto todos
+los días aunque nadie abra el dashboard. Si se añade alguna fuente más en
+el futuro, su sincronización va antes de este bloque, en la misma función,
+para que el snapshot del día siempre sea posterior a todas las fuentes
+automáticas.
 
 ## Seguridad — pendiente de tu parte
 

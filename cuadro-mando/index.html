@@ -269,7 +269,7 @@
       <p class="panel-title">Sincronización con Supabase</p>
       <div class="sync-row">
         <button class="btn" id="syncNowBtn">Sincronizar ahora</button>
-        <button class="btn" id="syncIndexaBtn">Actualizar desde Indexa</button>
+        <button class="btn" id="syncIndexaBtn">Actualizar Indexa + IB</button>
       </div>
       <div class="sync-status" id="syncStatus">Conectando…</div>
     </div>
@@ -1045,11 +1045,11 @@
   });
 
   document.getElementById('syncIndexaBtn').addEventListener('click', async ()=>{
-    setSyncStatus('Consultando Indexa…');
+    setSyncStatus('Consultando Indexa e Interactive Brokers…');
     try{
       const res = await fetch(supabaseConfig.url + '/functions/v1/indexa-sync', { headers: authHeaders() });
       if(!res.ok){ throw new Error('HTTP ' + res.status); }
-      const { accounts, updated, failed } = await res.json();
+      const { updated, failed, ibUpdated, ibInserted, ibFailed } = await res.json();
       // La Edge Function ya escribió en Supabase (también la usa el cron diario sin navegador
       // abierto), así que aquí solo recargamos el estado en vez de volver a construirlo a mano.
       const rows = await supabaseGet();
@@ -1057,7 +1057,9 @@
       document.getElementById('fxRate').value = state.fx;
       buildCards(); renderSummary();
       try{ localStorage.setItem('portfolio-data', JSON.stringify(state)); }catch(e){}
-      setSyncStatus('Indexa actualizado: ' + updated + ' cuenta(s)' + (failed ? ', ' + failed + ' con error' : ''), failed ? 'err' : 'ok');
+      const totalFailed = failed + ibFailed;
+      const totalOk = updated + ibUpdated + ibInserted;
+      setSyncStatus('Indexa + IB actualizado: ' + totalOk + ' cuenta(s)' + (totalFailed ? ', ' + totalFailed + ' con error' : ''), totalFailed ? 'err' : 'ok');
     }catch(e){ setSyncStatus('Error al consultar Indexa (' + e.message + ')', 'err'); }
   });
 
