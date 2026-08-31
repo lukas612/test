@@ -164,6 +164,17 @@ GitHub Pages, ya configurado: **https://lukas612.github.io/test/**
   área apilada usando el desglose que `portfolio_snapshots.breakdown` ya
   guarda cada día — no ha hecho falta tocar el backend, solo leer un dato
   que ya se guardaba y no se usaba.
+- **"Indexa (histórico completo)"**: cuarto modo del gráfico de evolución
+  que no depende de `portfolio_snapshots` (que solo tiene un punto por día
+  desde que arrancó el cron) sino de `indexa_history` — así se ve el
+  recorrido real de las cuentas de Indexa desde que se abrieron (la
+  conjunta, desde 2022), no solo las últimas semanas. Enseña dos líneas
+  (valor total y aportado acumulado, sumando las 4 cuentas de Indexa +
+  Pensiones) igual que el modo "Total", pero a años vista en vez de
+  semanas. El resto de categorías (IB, manuales, inmuebles) no tienen este
+  histórico largo — por eso el gráfico principal ("Total") sigue acotado a
+  lo que hay en `portfolio_snapshots`, y esta pestaña es la manera de ver
+  más atrás para la parte que sí lo permite.
 - **Rentabilidad diaria**: debajo del Patrimonio neto, "Desde el [fecha]:
   ±X € (±Y%)" compara el snapshot más reciente con el anterior.
 - **Frescura de los datos por fuente**: en el panel de Sincronización,

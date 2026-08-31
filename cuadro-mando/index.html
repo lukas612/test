@@ -335,6 +335,7 @@
         <button class="evo-tab active" data-mode="total">Total</button>
         <button class="evo-tab" data-mode="categoria">Por categoría</button>
         <button class="evo-tab" data-mode="titular">Por titular</button>
+        <button class="evo-tab" data-mode="indexa">Indexa (histórico completo)</button>
       </div>
       <div class="evo-periods" id="evoPeriodTabs">
         <button class="evo-period" data-period="7">7D</button>
@@ -1381,7 +1382,7 @@
   }
   async function loadIndexaHistory(){
     try{
-      const res = await fetch(supabaseConfig.url + '/rest/v1/' + INDEXA_HISTORY_TABLE + '?select=account_number,fecha,net_amount&order=fecha.asc', {
+      const res = await fetch(supabaseConfig.url + '/rest/v1/' + INDEXA_HISTORY_TABLE + '?select=account_number,fecha,net_amount,total_amount&order=fecha.asc', {
         headers: authHeaders()
       });
       if(!res.ok) return;
@@ -1389,7 +1390,7 @@
       const byAccount = {};
       rows.forEach(r=>{
         if(!byAccount[r.account_number]) byAccount[r.account_number] = [];
-        byAccount[r.account_number].push({ fecha: r.fecha, net_amount: Number(r.net_amount)||0 });
+        byAccount[r.account_number].push({ fecha: r.fecha, net_amount: Number(r.net_amount)||0, total_amount: Number(r.total_amount)||0 });
       });
       indexaHistoryByAccount = byAccount;
     }catch(e){}
@@ -1473,12 +1474,102 @@
     return { keys, rows };
   }
 
+  function indexaAggregateSeries(){
+    const accounts = Object.keys(indexaHistoryByAccount).filter(a=>indexaHistoryByAccount[a] && indexaHistoryByAccount[a].length);
+    if(!accounts.length) return null;
+    const dateSet = new Set();
+    const sortedByAcc = {};
+    accounts.forEach(acc=>{
+      const arr = indexaHistoryByAccount[acc].slice().sort((a,b)=> a.fecha<b.fecha?-1:(a.fecha>b.fecha?1:0));
+      sortedByAcc[acc] = arr;
+      arr.forEach(h=>dateSet.add(h.fecha));
+    });
+    const dates = Array.from(dateSet).sort();
+    function valueAt(acc, date){
+      const arr = sortedByAcc[acc];
+      let lo=0, hi=arr.length-1, res=null;
+      while(lo<=hi){
+        const mid=(lo+hi)>>1;
+        if(arr[mid].fecha<=date){ res=arr[mid]; lo=mid+1; } else hi=mid-1;
+      }
+      return res;
+    }
+    const totalSeries = [], netSeries = [];
+    dates.forEach(d=>{
+      let tot=0, net=0;
+      accounts.forEach(acc=>{
+        const v = valueAt(acc, d);
+        if(v){ tot += v.total_amount; net += v.net_amount; }
+      });
+      totalSeries.push(tot); netSeries.push(net);
+    });
+    return { dates, totalSeries, netSeries };
+  }
+
   function renderEvolutionChart(allSnapshots){
     const container = document.getElementById('evolutionChart');
     const statsEl = document.getElementById('evoPeriodStats');
     const legendEl = document.getElementById('evoLegend');
     const noteEl = document.getElementById('evoNote');
     if(!container) return;
+    const W = 760, H = 180, PAD = 20;
+
+    if(evoMode === 'indexa'){
+      const agg = indexaAggregateSeries();
+      if(!agg || agg.dates.length < 2){
+        container.innerHTML = '<div class="chart-empty">Sin histórico de Indexa todavía — sincroniza al menos una vez desde "Actualizar Indexa + IB".</div>';
+        if(statsEl) statsEl.innerHTML = '';
+        if(legendEl) legendEl.innerHTML = '';
+        if(noteEl) noteEl.textContent = '';
+        return;
+      }
+      let { dates, totalSeries, netSeries } = agg;
+      if(noteEl) noteEl.textContent = '';
+      if(evoPeriod !== 'all'){
+        const lastDate = dates[dates.length-1];
+        let fromDate;
+        if(evoPeriod === 'ytd') fromDate = lastDate.slice(0,4) + '-01-01';
+        else { const dd = new Date(lastDate+'T00:00:00Z'); dd.setUTCDate(dd.getUTCDate() - Number(evoPeriod)); fromDate = dd.toISOString().slice(0,10); }
+        const startIdx = dates.findIndex(d=>d>=fromDate);
+        if(startIdx > 0 && dates.length - startIdx >= 2){
+          dates = dates.slice(startIdx); totalSeries = totalSeries.slice(startIdx); netSeries = netSeries.slice(startIdx);
+        } else if(noteEl){
+          noteEl.textContent = 'No hay histórico suficiente para ese periodo — mostrando todo el histórico de Indexa (' + dates.length + ' días).';
+        }
+      }
+      const nn = dates.length;
+      const xAt2 = (i) => PAD + i * ((W - PAD*2) / (nn - 1));
+      const allVals = totalSeries.concat(netSeries);
+      const min = Math.min.apply(null, allVals), max = Math.max.apply(null, allVals);
+      const range = (max - min) || 1;
+      const yAt2 = (v) => H - PAD - ((v - min)/range) * (H - PAD*2);
+      const points = totalSeries.map((v,i)=>[xAt2(i), yAt2(v)]);
+      const points2 = netSeries.map((v,i)=>[xAt2(i), yAt2(v)]);
+      const linePath = points.map((p,i)=> (i===0?'M':'L') + p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' ');
+      const line2Path = points2.map((p,i)=> (i===0?'M':'L') + p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' ');
+      const areaPath = linePath + ' L' + points[nn-1][0].toFixed(1) + ',' + (H-PAD) + ' L' + points[0][0].toFixed(1) + ',' + (H-PAD) + ' Z';
+      container.innerHTML =
+        '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" class="evo-svg">' +
+          '<path d="'+areaPath+'" class="evo-area"></path>' +
+          '<path d="'+line2Path+'" class="evo-line-2"></path>' +
+          '<path d="'+linePath+'" class="evo-line"></path>' +
+        '</svg>' +
+        '<div class="evo-labels"><span>'+dates[0]+' · '+fmtEUR(totalSeries[0])+'</span><span>'+dates[nn-1]+' · '+fmtEUR(totalSeries[nn-1])+'</span></div>';
+      if(legendEl) legendEl.innerHTML =
+        '<span><span class="dot" style="background:var(--gold)"></span>Valor Indexa + Pensiones</span>' +
+        '<span><span class="swatch-line"></span>Aportado acumulado</span>';
+      const deltaTotal = totalSeries[nn-1] - totalSeries[0];
+      const deltaAportado = netSeries[nn-1] - netSeries[0];
+      const deltaMercado = deltaTotal - deltaAportado;
+      if(statsEl){
+        statsEl.innerHTML =
+          '<span>Variación del periodo: <b class="'+(deltaTotal>=0?'pos':'neg')+'">'+(deltaTotal>=0?'+':'')+fmtEUR(deltaTotal)+'</b></span>' +
+          '<span>Aportado: <b>'+(deltaAportado>=0?'+':'')+fmtEUR(deltaAportado)+'</b></span>' +
+          '<span>Rentabilidad de mercado: <b class="'+(deltaMercado>=0?'pos':'neg')+'">'+(deltaMercado>=0?'+':'')+fmtEUR(deltaMercado)+'</b></span>';
+      }
+      return;
+    }
+
     if(!allSnapshots || allSnapshots.length < 2){
       container.innerHTML = '<div class="chart-empty">Aún no hay suficiente histórico — vuelve otro día para ver la evolución.</div>';
       if(statsEl) statsEl.innerHTML = '';
@@ -1489,7 +1580,6 @@
     const { list: snapshots, truncated } = filterSnapshotsByPeriod(allSnapshots, evoPeriod);
     if(noteEl) noteEl.textContent = truncated ? 'No hay histórico suficiente para ese periodo — mostrando todo lo disponible (' + snapshots.length + ' días).' : '';
 
-    const W = 760, H = 180, PAD = 20;
     const n = snapshots.length;
     const xAt = (i) => PAD + i * ((W - PAD*2) / (n - 1));
 
