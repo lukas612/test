@@ -39,12 +39,20 @@
   .hero-sub .pos{ color: var(--positive); }
   .hero-sub .neg{ color: var(--negative); }
 
+  .alert-bar{ background: rgba(193,88,79,0.08); border:1px solid rgba(193,88,79,0.32); border-radius:8px; padding:13px 16px; margin-bottom:24px; }
+  .alert-bar .alert-eyebrow{ font-family:'IBM Plex Mono', monospace; font-size:10.5px; letter-spacing:0.08em; text-transform:uppercase; color: var(--negative); margin:0 0 8px; }
+  .alert-item{ font-size:13px; color: var(--ink); line-height:1.5; }
+  .alert-item + .alert-item{ margin-top:5px; }
+  .alert-item b{ color: var(--negative); }
+
   .hero-split{ display:flex; gap:20px; flex-wrap:wrap; margin-bottom: 30px; }
   .hero-block{ flex:1; min-width: 260px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 20px 22px; border-top: 3px solid var(--line); }
   .hero-block--inv{ border-top-color: var(--gold); }
   .hero-block--prop{ border-top-color: var(--c-inmuebles); }
+  .hero-block--pasivos{ border-top-color: var(--negative); }
   .hero-block-label{ font-family:'IBM Plex Mono', monospace; font-size: 11px; letter-spacing:0.08em; text-transform:uppercase; color: var(--ink-faint); margin:0; }
   .hero-block-num{ font-family: 'Fraunces', serif; font-weight: 600; font-size: clamp(26px, 4vw, 34px); line-height:1; margin: 8px 0 0; }
+  .hero-block-num.neg{ color: var(--negative); }
   .hero-block-sub{ font-family:'IBM Plex Mono', monospace; font-size: 12.5px; color: var(--ink-dim); margin-top: 8px; }
   .hero-block-sub b{ color: var(--ink); font-weight: 500; }
   .hero-block-delta{ display:flex; align-items:center; gap:10px; margin-top: 12px; flex-wrap:wrap; }
@@ -71,6 +79,11 @@
   .sync-status{ font-family:'IBM Plex Mono', monospace; font-size: 12px; color: var(--ink-faint); margin-top: 10px; }
   .sync-status.ok{ color: var(--positive); }
   .sync-status.err{ color: var(--negative); }
+  .data-freshness{ font-family:'IBM Plex Mono', monospace; font-size: 11.5px; color: var(--ink-faint); margin-top: 8px; }
+  .data-freshness details{ margin-top: 6px; }
+  .data-freshness summary{ cursor:pointer; color: var(--ink-dim); }
+  .data-freshness ul{ margin: 6px 0 0; padding-left: 18px; }
+  .data-freshness li{ margin-bottom: 3px; }
 
   input:focus, select:focus{ outline: 1px solid var(--gold-dim); }
 
@@ -160,10 +173,10 @@
   td.gain.pos{ color: var(--positive); }
   td.gain.neg{ color: var(--negative); }
   td.del{ width: 28px; text-align:center; }
-  .del-btn, .del-btn-prop{ background:none; border:none; color: var(--ink-faint); cursor:pointer; font-size:15px; line-height:1; padding: 4px 6px; border-radius:4px; }
-  .del-btn:hover, .del-btn-prop:hover{ color: var(--negative); background: rgba(193,88,79,0.1); }
-  .add-row, .add-row-prop{ margin-top: 10px; background: none; border: 1px dashed var(--line); color: var(--ink-dim); font-family:'IBM Plex Mono', monospace; font-size: 12px; padding: 7px 12px; border-radius:6px; cursor:pointer; width:100%; }
-  .add-row:hover, .add-row-prop:hover{ border-color: var(--gold-dim); color: var(--gold); }
+  .del-btn, .del-btn-prop, .del-btn-pasivo{ background:none; border:none; color: var(--ink-faint); cursor:pointer; font-size:15px; line-height:1; padding: 4px 6px; border-radius:4px; }
+  .del-btn:hover, .del-btn-prop:hover, .del-btn-pasivo:hover{ color: var(--negative); background: rgba(193,88,79,0.1); }
+  .add-row, .add-row-prop, .add-row-pasivo{ margin-top: 10px; background: none; border: 1px dashed var(--line); color: var(--ink-dim); font-family:'IBM Plex Mono', monospace; font-size: 12px; padding: 7px 12px; border-radius:6px; cursor:pointer; width:100%; }
+  .add-row:hover, .add-row-prop:hover, .add-row-pasivo:hover{ border-color: var(--gold-dim); color: var(--gold); }
 
   .footer{ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-top: 34px; padding-top: 18px; border-top: 1px solid var(--line); font-family:'IBM Plex Mono', monospace; font-size: 11.5px; color: var(--ink-faint); }
   .reset-btn{ background:none; border:1px solid var(--line); color: var(--ink-dim); padding:7px 14px; border-radius: 6px; font-family:'IBM Plex Mono', monospace; font-size: 11.5px; cursor:pointer; }
@@ -178,7 +191,7 @@
     .donut-hole{ top:19px; left:19px; width:112px; height:112px; }
     #sheetsUrl{ min-width: 100%; }
     td.vendido input[type=checkbox]{ width:20px; height:20px; }
-    .del-btn, .del-btn-prop{ padding: 8px 10px; font-size:17px; }
+    .del-btn, .del-btn-prop, .del-btn-pasivo{ padding: 8px 10px; font-size:17px; }
     .tabs{ flex-wrap: wrap; }
     .tab-btn{ flex: 1 1 auto; text-align:center; }
   }
@@ -194,8 +207,22 @@
   .evo-svg{ width:100%; height:180px; display:block; }
   .evo-area{ fill: rgba(201,162,39,0.14); stroke:none; }
   .evo-line{ fill:none; stroke: var(--gold); stroke-width:2; }
+  .evo-line-2{ fill:none; stroke: var(--ink-faint); stroke-width:1.5; stroke-dasharray:4 3; }
   .evo-labels{ display:flex; justify-content:space-between; font-family:'IBM Plex Mono', monospace; font-size:11.5px; color: var(--ink-faint); margin-top:8px; }
   .chart-empty{ font-family:'IBM Plex Mono', monospace; font-size:12.5px; color: var(--ink-faint); padding:20px 0; text-align:center; }
+
+  .evo-controls{ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:14px; }
+  .evo-tabs, .evo-periods{ display:flex; gap:6px; flex-wrap:wrap; }
+  .evo-tab, .evo-period{ background:none; border:1px solid var(--line); color:var(--ink-dim); font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:0.03em; padding:5px 10px; border-radius:6px; cursor:pointer; }
+  .evo-tab.active, .evo-period.active{ background:var(--surface-2); color:var(--gold); border-color:var(--gold-dim); }
+  .evo-period-stats{ display:flex; gap:24px; flex-wrap:wrap; font-family:'IBM Plex Mono', monospace; font-size:12.5px; color:var(--ink-dim); margin-bottom:12px; }
+  .evo-period-stats b{ color:var(--ink); }
+  .evo-period-stats .pos{ color:var(--positive); }
+  .evo-period-stats .neg{ color:var(--negative); }
+  .evo-legend{ display:flex; flex-wrap:wrap; gap:14px; margin-top:12px; font-family:'IBM Plex Mono', monospace; font-size:11px; color:var(--ink-dim); }
+  .evo-legend .dot{ width:8px; height:8px; border-radius:2px; display:inline-block; margin-right:5px; vertical-align:middle; }
+  .evo-legend .swatch-line{ display:inline-block; width:14px; height:0; border-top:1.5px dashed var(--ink-faint); margin-right:5px; vertical-align:middle; }
+  .evo-note{ font-family:'IBM Plex Mono', monospace; font-size:11px; color:var(--ink-faint); margin-top:8px; }
 </style>
 </head>
 <body>
@@ -225,12 +252,16 @@
 
     <div class="hero-top">
       <div>
-        <p class="hero-total-label">Patrimonio total</p>
+        <p class="hero-total-label">Patrimonio neto</p>
         <p class="hero-total-num" id="heroTotal">€0</p>
         <p class="hero-sub">actualizado <b id="heroDate">—</b> · <span id="heroTotalPct" class="pos">+0,0%</span> global</p>
+        <p class="hero-sub" id="heroNetNote" style="display:none">Bruto <b id="heroGrossTotal">€0</b> · Pasivos <b id="heroPasivosNote" class="neg">−€0</b></p>
+        <p class="hero-sub" id="heroDailyNote" style="display:none"></p>
       </div>
       <button class="btn primary" id="goToMovimientos">+ Añadir inversión</button>
     </div>
+
+    <div class="alert-bar" id="alertBar" style="display:none"></div>
 
     <div class="hero-split">
       <div class="hero-block hero-block--inv">
@@ -250,6 +281,11 @@
           <span class="delta-pill sm pos" id="heroPropDelta">+0,0%</span>
           <span class="delta-label" id="heroPropDeltaAbs">+€0</span>
         </div>
+      </div>
+      <div class="hero-block hero-block--pasivos" id="heroPasivosBlock" style="display:none">
+        <p class="hero-block-label">Pasivos</p>
+        <p class="hero-block-num neg" id="heroPasivosBlockTotal">€0</p>
+        <p class="hero-block-sub" id="heroPasivosCuota">Cuota mensual €0</p>
       </div>
     </div>
 
@@ -294,7 +330,24 @@
     </div>
 
     <p class="section-label">Evolución del patrimonio</p>
+    <div class="evo-controls">
+      <div class="evo-tabs" id="evoModeTabs">
+        <button class="evo-tab active" data-mode="total">Total</button>
+        <button class="evo-tab" data-mode="categoria">Por categoría</button>
+        <button class="evo-tab" data-mode="titular">Por titular</button>
+      </div>
+      <div class="evo-periods" id="evoPeriodTabs">
+        <button class="evo-period" data-period="7">7D</button>
+        <button class="evo-period" data-period="30">1M</button>
+        <button class="evo-period" data-period="ytd">YTD</button>
+        <button class="evo-period" data-period="365">1A</button>
+        <button class="evo-period active" data-period="all">Todo</button>
+      </div>
+    </div>
+    <div class="evo-period-stats" id="evoPeriodStats"></div>
     <div class="panel evo-block" id="evolutionChart"><div class="chart-empty">Cargando histórico…</div></div>
+    <div class="evo-legend" id="evoLegend"></div>
+    <div class="evo-note" id="evoNote"></div>
 
   </div>
 
@@ -317,6 +370,7 @@
         <button class="btn" id="syncIndexaBtn">Actualizar Indexa + IB</button>
       </div>
       <div class="sync-status" id="syncStatus">Conectando…</div>
+      <div class="data-freshness" id="dataFreshness"></div>
     </div>
 
     <div class="panel" id="addFormPanel">
@@ -337,6 +391,9 @@
 
     <p class="section-label">Detalle y edición por producto</p>
     <div class="cards" id="cards"></div>
+
+    <p class="section-label">Pasivos</p>
+    <div class="card" id="pasivosCard" style="--cat-color: var(--negative)"></div>
 
     <div class="footer">
       <span id="saveStatus">Guardado automático activado</span>
@@ -416,7 +473,7 @@
   }
 
   function defaultState(){
-    const s = { fx: 0.92, inmuebles: [] };
+    const s = { fx: 0.92, inmuebles: [], pasivos: [] };
     CATS.forEach(c=>{ s[c.key] = [blankRow(c)]; });
     s.indexa[0].a = 'Cartera indexada';
     const cf = CATS.find(c=>c.key==='crowdfunding');
@@ -464,6 +521,28 @@
     return { inv, val, pl: val-inv, plPct: inv>0 ? ((val-inv)/inv*100) : 0 };
   }
 
+  /* ---------- Pasivos (deudas) ---------- */
+  const PASIVO_TIPOS = [
+    { key:'hipoteca', label:'Hipoteca' },
+    { key:'prestamo', label:'Préstamo' },
+    { key:'otro', label:'Otro' },
+  ];
+  function blankLiability(){
+    return { veh: VEHS[0].key, nombre:'', tipo:'hipoteca', saldoPendiente:0, cuotaMensual:0, inmuebleVinculado:'', fecha: todayISO() };
+  }
+  function pasivosTotals(){
+    let total = 0, cuota = 0;
+    const byTitular = {};
+    (state.pasivos||[]).forEach(l=>{
+      const saldo = Number(l.saldoPendiente)||0;
+      total += saldo;
+      cuota += Number(l.cuotaMensual)||0;
+      const veh = l.veh || VEHS[0].key;
+      byTitular[veh] = (byTitular[veh]||0) + saldo;
+    });
+    return { total, cuota, byTitular };
+  }
+
   const DEFAULT_SUPABASE_CONFIG = {
     url: 'https://pnprzupnqpjqgtlqkrfd.supabase.co',
     key: 'sb_publishable_KtVZaVnSCuSNVJG5qlYlUg_WAiHOoOj'
@@ -471,6 +550,7 @@
   const SUPABASE_TABLE = 'portfolio_holdings';
   const SUPABASE_SNAPSHOTS_TABLE = 'portfolio_snapshots';
   const PROPERTIES_TABLE = 'properties';
+  const LIABILITIES_TABLE = 'liabilities';
 
   const sbClient = supabase.createClient(DEFAULT_SUPABASE_CONFIG.url, DEFAULT_SUPABASE_CONFIG.key);
 
@@ -478,6 +558,9 @@
   let supabaseConfig = DEFAULT_SUPABASE_CONFIG;
   let currentSession = null;
   let saveTimer = null;
+  let lastSnapshots = [];
+  let evoMode = 'total';
+  let evoPeriod = 'all';
 
   function authHeaders(){
     const token = (currentSession && currentSession.access_token) ? currentSession.access_token : supabaseConfig.key;
@@ -581,12 +664,32 @@
     const g = totalPatrimonio();
     const gc = grandTotals();
     const gp = propertiesTotals();
+    const pas = pasivosTotals();
+    const netVal = g.val - pas.total;
 
-    document.getElementById('heroTotal').textContent = fmtEUR(g.val);
+    document.getElementById('heroTotal').textContent = fmtEUR(netVal);
     document.getElementById('heroDate').textContent = new Date().toLocaleDateString('es-ES', { day:'2-digit', month:'short', year:'numeric' });
     const heroTotalPctEl = document.getElementById('heroTotalPct');
     heroTotalPctEl.textContent = fmtPct(g.plPct);
     heroTotalPctEl.className = g.pl >= 0 ? 'pos' : 'neg';
+
+    const netNoteEl = document.getElementById('heroNetNote');
+    if(pas.total > 0){
+      netNoteEl.style.display = '';
+      document.getElementById('heroGrossTotal').textContent = fmtEUR(g.val);
+      document.getElementById('heroPasivosNote').textContent = '−' + fmtEUR(pas.total);
+    } else {
+      netNoteEl.style.display = 'none';
+    }
+
+    const pasivosBlockEl = document.getElementById('heroPasivosBlock');
+    if(pas.total > 0){
+      pasivosBlockEl.style.display = '';
+      document.getElementById('heroPasivosBlockTotal').textContent = '−' + fmtEUR(pas.total);
+      document.getElementById('heroPasivosCuota').innerHTML = 'Cuota mensual <b>'+fmtEUR(pas.cuota)+'</b>';
+    } else {
+      pasivosBlockEl.style.display = 'none';
+    }
 
     document.getElementById('heroInvTotal').textContent = fmtEUR(gc.val);
     document.getElementById('heroInvInvertido').textContent = fmtEUR(gc.inv);
@@ -705,7 +808,105 @@
     const ring = document.getElementById('donutRing');
     ring.style.background = stops.length ? ('conic-gradient(' + stops.join(', ') + ')') : 'var(--surface-2)';
     document.getElementById('donutCenter').textContent = fmtEUR(g.val);
+    renderDailyDelta(lastSnapshots);
+    renderAlertBar();
+    renderDataFreshness();
     refreshScrollFades();
+  }
+
+  function fmtShortDate(iso){
+    if(!iso) return '';
+    const d = new Date(iso+'T00:00:00Z');
+    return d.toLocaleDateString('es-ES', { day:'2-digit', month:'short' });
+  }
+
+  function renderDailyDelta(snapshots){
+    const el = document.getElementById('heroDailyNote');
+    if(!el) return;
+    if(!snapshots || snapshots.length < 2){ el.style.display = 'none'; return; }
+    const last = snapshots[snapshots.length-1], prev = snapshots[snapshots.length-2];
+    const lastVal = Number(last.valor_total)||0, prevVal = Number(prev.valor_total)||0;
+    const delta = lastVal - prevVal;
+    const pct = prevVal>0 ? (delta/prevVal*100) : 0;
+    el.style.display = '';
+    el.innerHTML = 'Desde el '+fmtShortDate(prev.fecha)+': <span class="'+(delta>=0?'pos':'neg')+'">'+(delta>=0?'+':'')+fmtEUR(delta)+' ('+fmtPct(pct)+')</span>';
+  }
+
+  function parseVenc(venc){
+    if(!venc) return null;
+    const m = String(venc).trim().match(/^(\d{1,2})\/(\d{4})$/);
+    if(!m) return null;
+    const mes = Number(m[1]), anio = Number(m[2]);
+    if(mes < 1 || mes > 12) return null;
+    return new Date(Date.UTC(anio, mes-1, 1));
+  }
+  function vencimientoAlerts(){
+    const now = new Date();
+    const todayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    const alerts = [];
+    (state.crowdfunding||[]).forEach(row=>{
+      if(row.vendido) return;
+      const d = parseVenc(row.venc);
+      if(!d) return;
+      const days = Math.round((d - todayUTC) / 86400000);
+      if(days <= 30) alerts.push({ nombre: row.a || 'Proyecto', plataforma: row.b || '', days });
+    });
+    alerts.sort((a,b)=>a.days-b.days);
+    return alerts;
+  }
+  function renderAlertBar(){
+    const el = document.getElementById('alertBar');
+    if(!el) return;
+    const alerts = vencimientoAlerts();
+    if(!alerts.length){ el.style.display = 'none'; return; }
+    el.style.display = '';
+    el.innerHTML = '<p class="alert-eyebrow">Vencimientos próximos</p>' +
+      alerts.map(a=>{
+        const when = a.days < 0 ? 'venció hace '+Math.abs(a.days)+' días' : (a.days===0 ? 'vence hoy' : 'vence en '+a.days+' días');
+        return '<div class="alert-item"><b>'+escapeHtml(a.nombre)+'</b>'+(a.plataforma?' ('+escapeHtml(a.plataforma)+')':'')+' — '+when+'.</div>';
+      }).join('');
+  }
+
+  const IB_ACCOUNT_LABELS = new Set(['IB Personal Long','IB Personal','IB Conjunta']);
+  function isAutoSyncedRow(catKey, row){
+    if(catKey === 'indexa') return true;
+    if(catKey === 'pensiones') return /indexa/i.test(row.b||'');
+    if(catKey === 'acciones') return IB_ACCOUNT_LABELS.has(row.b||'');
+    if(catKey === 'efectivo') return row.b === 'Interactive Brokers';
+    return false;
+  }
+  function dataFreshness(){
+    let autoMax = null;
+    const staleManual = [];
+    const now = new Date();
+    CATS.forEach(cat=>{
+      (state[cat.key]||[]).forEach(row=>{
+        if(!row.fecha) return;
+        if(isAutoSyncedRow(cat.key, row)){
+          if(!autoMax || row.fecha > autoMax) autoMax = row.fecha;
+        } else if(!row.vendido){
+          const days = Math.floor((now - new Date(row.fecha+'T00:00:00Z')) / 86400000);
+          if(days > 90) staleManual.push({ label: (row.a||row.b||cat.label), cat: cat.label, days });
+        }
+      });
+    });
+    return { autoMax, staleManual };
+  }
+  function renderDataFreshness(){
+    const el = document.getElementById('dataFreshness');
+    if(!el) return;
+    const f = dataFreshness();
+    let html = '';
+    if(f.autoMax){
+      const days = Math.floor((new Date() - new Date(f.autoMax+'T00:00:00Z')) / 86400000);
+      html += '<span>Indexa + IB: dato del '+fmtShortDate(f.autoMax)+' ('+(days<=0?'hoy':'hace '+days+'d')+')</span>';
+    }
+    if(f.staleManual.length){
+      html += '<details><summary>'+f.staleManual.length+' fila(s) manuales sin tocar hace más de 90 días</summary>' +
+        '<ul>' + f.staleManual.map(s=>'<li>'+escapeHtml(s.cat)+' — '+escapeHtml(s.label)+' (hace '+s.days+'d)</li>').join('') + '</ul>' +
+        '</details>';
+    }
+    el.innerHTML = html || '<span>Sin datos sincronizados automáticamente todavía.</span>';
   }
 
   function vehOptions(sel){ return VEHS.map(v=>'<option value="'+v.key+'" '+(v.key===sel?'selected':'')+'>'+v.label+'</option>').join(''); }
@@ -874,6 +1075,42 @@
     });
   }
 
+  function tipoPasivoOptions(sel){ return PASIVO_TIPOS.map(t=>'<option value="'+t.key+'" '+(t.key===sel?'selected':'')+'>'+t.label+'</option>').join(''); }
+  function inmuebleVinculadoOptions(sel){
+    const opts = ['<option value="">— Ninguno —</option>'];
+    state.inmuebles.forEach(p=>{
+      const n = p.nombre || 'Inmueble';
+      opts.push('<option value="'+escapeHtml(n)+'" '+(n===sel?'selected':'')+'>'+escapeHtml(n)+'</option>');
+    });
+    return opts.join('');
+  }
+  function renderPasivos(){
+    const container = document.getElementById('pasivosCard');
+    if(!container) return;
+    const t = pasivosTotals();
+    let rows = '';
+    (state.pasivos||[]).forEach((l, idx)=>{
+      rows +=
+        '<tr>' +
+          '<td class="veh"><select class="pasivocell" data-idx="'+idx+'" data-field="veh">'+vehOptions(l.veh)+'</select></td>' +
+          '<td><input class="pasivocell" data-idx="'+idx+'" data-field="nombre" value="'+escapeHtml(l.nombre||'')+'" placeholder="Hipoteca piso"></td>' +
+          '<td><select class="pasivocell" data-idx="'+idx+'" data-field="tipo">'+tipoPasivoOptions(l.tipo)+'</select></td>' +
+          '<td><select class="pasivocell" data-idx="'+idx+'" data-field="inmuebleVinculado">'+inmuebleVinculadoOptions(l.inmuebleVinculado)+'</select></td>' +
+          '<td class="num"><input class="pasivocell num" type="number" step="0.01" data-idx="'+idx+'" data-field="saldoPendiente" value="'+(l.saldoPendiente||'')+'" placeholder="0"></td>' +
+          '<td class="num"><input class="pasivocell num" type="number" step="0.01" data-idx="'+idx+'" data-field="cuotaMensual" value="'+(l.cuotaMensual||'')+'" placeholder="0"></td>' +
+          '<td><input class="pasivocell date" type="date" data-idx="'+idx+'" data-field="fecha" value="'+(l.fecha||'')+'"></td>' +
+          '<td class="del"><button class="del-btn-pasivo" data-pasivo-del="'+idx+'" title="Eliminar pasivo">×</button></td>' +
+        '</tr>';
+    });
+    container.innerHTML =
+      '<div class="card-head"><div class="card-title">Pasivos</div><div class="card-stats">' +
+        '<span>Saldo pendiente: <b style="color:var(--negative)">'+fmtEUR(t.total)+'</b></span>' +
+        '<span>Cuota mensual: <b style="color:var(--ink)">'+fmtEUR(t.cuota)+'</b></span>' +
+      '</div></div>' +
+      '<div class="table-scroll"><table><thead><tr><th>Titular</th><th>Nombre</th><th>Tipo</th><th>Inmueble vinculado</th><th class="num">Saldo pendiente</th><th class="num">Cuota mensual</th><th>Fecha</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>' +
+      '<button class="add-row-pasivo" id="addPasivoBtn">+ Añadir pasivo</button>';
+  }
+
   /* ---------- Formulario "Añadir inversión" ---------- */
   const afCat = document.getElementById('afCat');
   const afVeh = document.getElementById('afVeh');
@@ -956,6 +1193,24 @@
     refreshScrollFades();
     document.getElementById('addFormPanel').scrollIntoView({ behavior:'smooth', block:'start' });
     afC1.focus();
+  });
+
+  /* ---------- Gráfico de evolución: modo y periodo ---------- */
+  document.getElementById('evoModeTabs').addEventListener('click', (e)=>{
+    const btn = e.target.closest('.evo-tab');
+    if(!btn) return;
+    document.querySelectorAll('#evoModeTabs .evo-tab').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    evoMode = btn.dataset.mode;
+    renderEvolutionChart(lastSnapshots);
+  });
+  document.getElementById('evoPeriodTabs').addEventListener('click', (e)=>{
+    const btn = e.target.closest('.evo-period');
+    if(!btn) return;
+    document.querySelectorAll('#evoPeriodTabs .evo-period').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    evoPeriod = btn.dataset.period;
+    renderEvolutionChart(lastSnapshots);
   });
 
   /* ---------- Google Sheets sync ---------- */
@@ -1060,6 +1315,33 @@
     if(!insRes.ok){ throw new Error('HTTP ' + insRes.status + ' al insertar inmuebles'); }
     return true;
   }
+  function toLiabilityDbRow(l){
+    return { titular: l.veh, nombre: l.nombre, tipo: l.tipo, saldo_pendiente: l.saldoPendiente, cuota_mensual: l.cuotaMensual, inmueble_vinculado: l.inmuebleVinculado||'', fecha: l.fecha||'' };
+  }
+  function fromLiabilityDbRow(r){
+    return { veh: r.titular||VEHS[0].key, nombre: r.nombre||'', tipo: r.tipo||'hipoteca', saldoPendiente: parseFloat(r.saldo_pendiente)||0, cuotaMensual: parseFloat(r.cuota_mensual)||0, inmuebleVinculado: r.inmueble_vinculado||'', fecha: r.fecha||'' };
+  }
+  async function supabaseGetLiabilities(){
+    const res = await fetch(supabaseConfig.url + '/rest/v1/' + LIABILITIES_TABLE + '?select=*', { headers: authHeaders() });
+    if(!res.ok){ throw new Error('HTTP ' + res.status); }
+    const rows = await res.json();
+    return rows.map(fromLiabilityDbRow);
+  }
+  async function supabasePostLiabilities(liabilities){
+    const delRes = await fetch(supabaseConfig.url + '/rest/v1/' + LIABILITIES_TABLE + '?id=gte.0', {
+      method:'DELETE',
+      headers: authHeaders()
+    });
+    if(!delRes.ok){ throw new Error('HTTP ' + delRes.status + ' al borrar pasivos'); }
+    if(liabilities.length === 0) return true;
+    const insRes = await fetch(supabaseConfig.url + '/rest/v1/' + LIABILITIES_TABLE, {
+      method:'POST',
+      headers: Object.assign({}, authHeaders(), { 'Content-Type': 'application/json', Prefer: 'return=minimal' }),
+      body: JSON.stringify(liabilities.map(toLiabilityDbRow))
+    });
+    if(!insRes.ok){ throw new Error('HTTP ' + insRes.status + ' al insertar pasivos'); }
+    return true;
+  }
   function setSyncStatus(msg, kind){
     const el = document.getElementById('syncStatus');
     el.textContent = msg;
@@ -1088,39 +1370,154 @@
 
   async function loadSnapshots(){
     try{
-      const res = await fetch(supabaseConfig.url + '/rest/v1/' + SUPABASE_SNAPSHOTS_TABLE + '?select=fecha,valor_total&order=fecha.asc', {
+      const res = await fetch(supabaseConfig.url + '/rest/v1/' + SUPABASE_SNAPSHOTS_TABLE + '?select=fecha,valor_total,breakdown&order=fecha.asc', {
         headers: authHeaders()
       });
       if(!res.ok) return [];
       return await res.json();
     }catch(e){ return []; }
   }
+  function refreshEvolution(snapshots){
+    lastSnapshots = snapshots || [];
+    renderEvolutionChart(lastSnapshots);
+    renderDailyDelta(lastSnapshots);
+  }
 
-  function renderEvolutionChart(snapshots){
+  function contributionEvents(){
+    const events = [];
+    CATS.forEach(c=>{
+      (state[c.key]||[]).forEach(r=>{
+        if(!r.fecha) return;
+        events.push({ fecha: r.fecha, delta: toEUR(r.inv, r.cur) });
+      });
+    });
+    state.inmuebles.forEach(p=>{
+      if(!p.fechaCompra) return;
+      events.push({ fecha: p.fechaCompra, delta: Number(p.precioCompra)||0 });
+    });
+    events.sort((a,b)=> a.fecha < b.fecha ? -1 : (a.fecha > b.fecha ? 1 : 0));
+    return events;
+  }
+  function aportadoSeriesFor(dates){
+    const events = contributionEvents();
+    let idx = 0, sum = 0;
+    return dates.map(d=>{
+      while(idx < events.length && events[idx].fecha <= d){ sum += events[idx].delta; idx++; }
+      return sum;
+    });
+  }
+  function filterSnapshotsByPeriod(snapshots, period){
+    if(!snapshots.length || period === 'all') return { list: snapshots, truncated: false };
+    const lastDate = snapshots[snapshots.length-1].fecha;
+    let fromDate;
+    if(period === 'ytd'){
+      fromDate = lastDate.slice(0,4) + '-01-01';
+    } else {
+      const d = new Date(lastDate + 'T00:00:00Z');
+      d.setUTCDate(d.getUTCDate() - Number(period));
+      fromDate = d.toISOString().slice(0,10);
+    }
+    const filtered = snapshots.filter(s => s.fecha >= fromDate);
+    if(filtered.length >= 2) return { list: filtered, truncated: false };
+    return { list: snapshots, truncated: snapshots.length >= 2 };
+  }
+  function seriesForBreakdown(snapshots, mode){
+    const keys = mode === 'categoria'
+      ? CATS.map(c=>({key:c.key,label:c.label,hex:c.hex})).concat([{key:'inmuebles',label:'Inmuebles',hex:INMUEBLES_HEX}])
+      : VEHS.map(v=>({key:v.key,label:v.label,hex:v.hex}));
+    const rows = snapshots.map(s=>{
+      const b = s.breakdown || {};
+      const src = mode === 'categoria' ? (b.categorias || {}) : (b.titulares || {});
+      const out = {};
+      keys.forEach(k=>{ out[k.key] = k.key==='inmuebles' ? (Number(b.inmuebles)||0) : (Number(src[k.key])||0); });
+      return out;
+    });
+    return { keys, rows };
+  }
+
+  function renderEvolutionChart(allSnapshots){
     const container = document.getElementById('evolutionChart');
+    const statsEl = document.getElementById('evoPeriodStats');
+    const legendEl = document.getElementById('evoLegend');
+    const noteEl = document.getElementById('evoNote');
     if(!container) return;
-    if(!snapshots || snapshots.length < 2){
+    if(!allSnapshots || allSnapshots.length < 2){
       container.innerHTML = '<div class="chart-empty">Aún no hay suficiente histórico — vuelve otro día para ver la evolución.</div>';
+      if(statsEl) statsEl.innerHTML = '';
+      if(legendEl) legendEl.innerHTML = '';
+      if(noteEl) noteEl.textContent = '';
       return;
     }
+    const { list: snapshots, truncated } = filterSnapshotsByPeriod(allSnapshots, evoPeriod);
+    if(noteEl) noteEl.textContent = truncated ? 'No hay histórico suficiente para ese periodo — mostrando todo lo disponible (' + snapshots.length + ' días).' : '';
+
     const W = 760, H = 180, PAD = 20;
-    const values = snapshots.map(s=>Number(s.valor_total)||0);
-    const min = Math.min.apply(null, values), max = Math.max.apply(null, values);
-    const range = (max - min) || 1;
-    const stepX = (W - PAD*2) / (values.length - 1);
-    const points = values.map((v,i)=>{
-      const x = PAD + i*stepX;
-      const y = H - PAD - ((v - min)/range) * (H - PAD*2);
-      return [x, y];
-    });
-    const linePath = points.map((p,i)=> (i===0?'M':'L') + p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' ');
-    const areaPath = linePath + ' L' + points[points.length-1][0].toFixed(1) + ',' + (H-PAD) + ' L' + points[0][0].toFixed(1) + ',' + (H-PAD) + ' Z';
-    container.innerHTML =
-      '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" class="evo-svg">' +
-        '<path d="'+areaPath+'" class="evo-area"></path>' +
-        '<path d="'+linePath+'" class="evo-line"></path>' +
-      '</svg>' +
-      '<div class="evo-labels"><span>'+snapshots[0].fecha+' · '+fmtEUR(values[0])+'</span><span>'+snapshots[snapshots.length-1].fecha+' · '+fmtEUR(values[values.length-1])+'</span></div>';
+    const n = snapshots.length;
+    const xAt = (i) => PAD + i * ((W - PAD*2) / (n - 1));
+
+    if(evoMode === 'total'){
+      const dates = snapshots.map(s=>s.fecha);
+      const values = snapshots.map(s=>Number(s.valor_total)||0);
+      const aportado = aportadoSeriesFor(dates);
+      const allVals = values.concat(aportado);
+      const min = Math.min.apply(null, allVals), max = Math.max.apply(null, allVals);
+      const range = (max - min) || 1;
+      const yAt = (v) => H - PAD - ((v - min)/range) * (H - PAD*2);
+      const points = values.map((v,i)=>[xAt(i), yAt(v)]);
+      const points2 = aportado.map((v,i)=>[xAt(i), yAt(v)]);
+      const linePath = points.map((p,i)=> (i===0?'M':'L') + p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' ');
+      const line2Path = points2.map((p,i)=> (i===0?'M':'L') + p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' ');
+      const areaPath = linePath + ' L' + points[n-1][0].toFixed(1) + ',' + (H-PAD) + ' L' + points[0][0].toFixed(1) + ',' + (H-PAD) + ' Z';
+      container.innerHTML =
+        '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" class="evo-svg">' +
+          '<path d="'+areaPath+'" class="evo-area"></path>' +
+          '<path d="'+line2Path+'" class="evo-line-2"></path>' +
+          '<path d="'+linePath+'" class="evo-line"></path>' +
+        '</svg>' +
+        '<div class="evo-labels"><span>'+dates[0]+' · '+fmtEUR(values[0])+'</span><span>'+dates[n-1]+' · '+fmtEUR(values[n-1])+'</span></div>';
+
+      if(legendEl) legendEl.innerHTML =
+        '<span><span class="dot" style="background:var(--gold)"></span>Valor total</span>' +
+        '<span><span class="swatch-line"></span>Aportado acumulado</span>';
+
+      const deltaTotal = values[n-1] - values[0];
+      const deltaAportado = aportado[n-1] - aportado[0];
+      const deltaMercado = deltaTotal - deltaAportado;
+      if(statsEl){
+        statsEl.innerHTML =
+          '<span>Variación del periodo: <b class="'+(deltaTotal>=0?'pos':'neg')+'">'+(deltaTotal>=0?'+':'')+fmtEUR(deltaTotal)+'</b></span>' +
+          '<span>Aportado: <b>'+(deltaAportado>=0?'+':'')+fmtEUR(deltaAportado)+'</b></span>' +
+          '<span>Rentabilidad de mercado: <b class="'+(deltaMercado>=0?'pos':'neg')+'">'+(deltaMercado>=0?'+':'')+fmtEUR(deltaMercado)+'</b></span>';
+      }
+    } else {
+      const { keys, rows } = seriesForBreakdown(snapshots, evoMode);
+      const cumRows = rows.map(row=>{
+        let acc = 0;
+        return keys.map(k=>{ acc += row[k.key]; return acc; });
+      });
+      const max = Math.max.apply(null, cumRows.map(c=>c[c.length-1]).concat([1]));
+      const range = max || 1;
+      const yAt = (v) => H - PAD - (v/range) * (H - PAD*2);
+      let svg = '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" class="evo-svg">';
+      keys.forEach((k, ki)=>{
+        const topPts = cumRows.map((c,i)=>[xAt(i), yAt(c[ki])]);
+        const basePts = cumRows.map((c,i)=>[xAt(i), yAt(ki===0 ? 0 : c[ki-1])]);
+        const top = topPts.map((p,i)=>(i===0?'M':'L')+p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ');
+        const base = basePts.slice().reverse().map((p,i)=>(i===0?'L':'L')+p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ');
+        svg += '<path d="'+top+' '+base+' Z" style="fill:'+k.hex+'; fill-opacity:0.62; stroke:none;"></path>';
+      });
+      svg += '</svg>';
+      container.innerHTML = svg +
+        '<div class="evo-labels"><span>'+snapshots[0].fecha+'</span><span>'+snapshots[n-1].fecha+'</span></div>';
+
+      if(legendEl){
+        legendEl.innerHTML = keys.map(k=>{
+          const latest = rows[rows.length-1][k.key] || 0;
+          return '<span><span class="dot" style="background:'+k.hex+'"></span>'+escapeHtml(k.label)+' · '+fmtEUR(latest)+'</span>';
+        }).join('');
+      }
+      if(statsEl) statsEl.innerHTML = '';
+    }
   }
 
   async function persist(){
@@ -1130,8 +1527,9 @@
       try{
         await supabasePost(serializeRows());
         await supabasePostProperties(state.inmuebles);
+        await supabasePostLiabilities(state.pasivos||[]);
         await maybeSaveSnapshot();
-        loadSnapshots().then(renderEvolutionChart);
+        loadSnapshots().then(refreshEvolution);
         setSyncStatus('Sincronizado con Supabase · ' + new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}), 'ok');
       }catch(e){ setSyncStatus('Guardado local — error al sincronizar con Supabase (' + e.message + ')', 'err'); }
     }
@@ -1154,13 +1552,15 @@
       }catch(e){}
     }
     try{ state.inmuebles = await supabaseGetProperties(); }catch(e){}
+    try{ state.pasivos = await supabaseGetLiabilities(); }catch(e){}
     document.getElementById('fxRate').value = state.fx;
     buildCards();
     buildPropertyCards();
+    renderPasivos();
     renderPropertySummary();
     renderSummary();
     await maybeSaveSnapshot();
-    loadSnapshots().then(renderEvolutionChart);
+    loadSnapshots().then(refreshEvolution);
   }
 
   document.getElementById('syncNowBtn').addEventListener('click', async ()=>{
@@ -1169,9 +1569,10 @@
       const rows = await supabaseGet();
       state = deserializeRows(rows);
       state.inmuebles = await supabaseGetProperties();
+      state.pasivos = await supabaseGetLiabilities();
       document.getElementById('fxRate').value = state.fx;
-      buildCards(); buildPropertyCards(); renderPropertySummary(); renderSummary();
-      loadSnapshots().then(renderEvolutionChart);
+      buildCards(); buildPropertyCards(); renderPasivos(); renderPropertySummary(); renderSummary();
+      loadSnapshots().then(refreshEvolution);
       setSyncStatus('Datos actualizados desde Supabase', 'ok');
     }catch(e){ setSyncStatus('Error al sincronizar (' + e.message + ')', 'err'); }
   });
@@ -1293,6 +1694,10 @@
       const pIdx = Number(e.target.dataset.pidx), field = e.target.dataset.pfield;
       const isNum = field === 'precioCompra' || field === 'valorActual';
       state.inmuebles[pIdx][field] = isNum ? (parseFloat(e.target.value)||0) : e.target.value;
+      if(field === 'nombre'){
+        document.getElementById('property-card-'+pIdx).querySelector('.card-title').textContent = e.target.value || 'Inmueble';
+        renderPasivos();
+      }
       renderPropertyCardStats(pIdx); renderPropertySummary(); renderSummary(); scheduleSave();
       return;
     }
@@ -1307,6 +1712,18 @@
       }
       renderPropertyCardStats(pIdx); renderPropertySummary(); renderSummary(); scheduleSave();
     }
+    if(e.target.matches('.pasivocell')){
+      const idx = Number(e.target.dataset.idx), field = e.target.dataset.field;
+      const isNum = field === 'saldoPendiente' || field === 'cuotaMensual';
+      state.pasivos[idx][field] = isNum ? (parseFloat(e.target.value)||0) : e.target.value;
+      renderSummary(); scheduleSave();
+      if(!isNum) return;
+      const totalCell = document.querySelector('#pasivosCard .card-stats');
+      if(totalCell){
+        const t = pasivosTotals();
+        totalCell.innerHTML = '<span>Saldo pendiente: <b style="color:var(--negative)">'+fmtEUR(t.total)+'</b></span><span>Cuota mensual: <b style="color:var(--ink)">'+fmtEUR(t.cuota)+'</b></span>';
+      }
+    }
   });
 
   document.addEventListener('change', (e)=>{
@@ -1320,6 +1737,11 @@
       const pIdx = Number(e.target.dataset.pidx), field = e.target.dataset.pfield;
       state.inmuebles[pIdx][field] = e.target.value;
       renderPropertyCardStats(pIdx); renderSummary(); scheduleSave();
+    }
+    if(e.target.matches('select.pasivocell')){
+      const idx = Number(e.target.dataset.idx), field = e.target.dataset.field;
+      state.pasivos[idx][field] = e.target.value;
+      renderSummary(); scheduleSave();
     }
     if(e.target.matches('input[type=checkbox][data-field=vendido]')){
       const cat = e.target.dataset.cat, idx = Number(e.target.dataset.idx);
@@ -1351,13 +1773,13 @@
       if(confirm('¿Restablecer la plantilla? Se perderán los datos introducidos localmente (la hoja de Sheets, si está conectada, no se toca hasta que sincronices).')){
         state = defaultState();
         document.getElementById('fxRate').value = state.fx;
-        buildCards(); buildPropertyCards(); renderPropertySummary(); renderSummary(); scheduleSave();
+        buildCards(); buildPropertyCards(); renderPasivos(); renderPropertySummary(); renderSummary(); scheduleSave();
       }
     }
     if(e.target.matches('[data-prop-del]')){
       const pIdx = Number(e.target.dataset.propDel);
       state.inmuebles.splice(pIdx,1);
-      buildPropertyCards(); renderPropertySummary(); renderSummary(); scheduleSave();
+      buildPropertyCards(); renderPasivos(); renderPropertySummary(); renderSummary(); scheduleSave();
     }
     if(e.target.matches('[data-ledger-add]')){
       const pIdx = Number(e.target.dataset.ledgerAdd);
@@ -1368,6 +1790,15 @@
       const pIdx = Number(e.target.dataset.ledgerDelP), mIdx = Number(e.target.dataset.ledgerDelM);
       state.inmuebles[pIdx].movimientos.splice(mIdx,1);
       renderLedger(pIdx); renderPropertyCardStats(pIdx); renderPropertySummary(); renderSummary(); scheduleSave();
+    }
+    if(e.target.id === 'addPasivoBtn'){
+      state.pasivos.push(blankLiability());
+      renderPasivos(); renderSummary(); scheduleSave();
+    }
+    if(e.target.matches('[data-pasivo-del]')){
+      const idx = Number(e.target.dataset.pasivoDel);
+      state.pasivos.splice(idx,1);
+      renderPasivos(); renderSummary(); scheduleSave();
     }
   });
 

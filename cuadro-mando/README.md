@@ -53,6 +53,14 @@ que no venga autenticada como la cuenta autorizada.
   dashboard carga o guarda, hace upsert de la fila de hoy (`fecha` como clave,
   `Prefer: resolution=merge-duplicates`) — así se acumula un punto por día
   sin necesidad de ningún cron ni proceso aparte.
+- **Tabla de inmuebles**: `properties` (`titular, nombre, fecha_compra,
+  precio_compra, valor_actual, movimientos` jsonb). Misma política RLS.
+- **Tabla de pasivos**: `liabilities` (`titular, nombre, tipo, saldo_pendiente,
+  cuota_mensual, inmueble_vinculado, fecha`). Misma política RLS. El vínculo
+  con un inmueble es por nombre (texto libre, no una FK) para poder seguir
+  borrando y reinsertando todas las filas en cada guardado, igual que ya se
+  hacía con `properties` — si renombras el inmueble, el desplegable de
+  "Inmueble vinculado" se refresca solo.
 - **`app_files`**: ya no se usa para servir nada (ver sección de hosting).
   RLS activado sin ninguna política — completamente cerrada, ni lectura ni
   escritura desde el cliente.
@@ -131,6 +139,41 @@ GitHub Pages, ya configurado: **https://lukas612.github.io/test/**
   pasa a referirse solo a la inversión (los inmuebles ya tienen su plusvalía
   en su propio bloque arriba), por eso ahora se titula "Rendimiento de la
   inversión".
+- **Pasivos y Patrimonio neto**: nueva tarjeta "Pasivos" en Movimientos
+  (Titular, Nombre, Tipo — Hipoteca/Préstamo/Otro —, Inmueble vinculado
+  opcional, Saldo pendiente, Cuota mensual). La cifra principal del Panel
+  pasa a llamarse "Patrimonio neto" = activos − pasivos, con una línea
+  "Bruto X € · Pasivos −Y €" debajo cuando hay algún pasivo, y un tercer
+  bloque "Pasivos" junto a Inversión/Inmobiliario (solo visible si el saldo
+  pendiente es mayor que 0). Las distribuciones por titular/producto y el
+  espectro de liquidez siguen siendo sobre activos brutos — el neto solo se
+  calcula en la cifra de cabecera, para no liar el reparto por categoría con
+  una deuda que no pertenece a ninguna.
+- **Aportado acumulado vs. rentabilidad de mercado**: el gráfico de
+  evolución (modo "Total") ahora pinta dos líneas — el valor total de
+  siempre y el aportado acumulado (suma de `invertido`/`precioCompra` de
+  cada fila e inmueble según su fecha de alta, reconstruido sobre los datos
+  que ya existían, sin tabla nueva). Encima del gráfico, un resumen del
+  periodo separa la variación en "Aportado" (dinero nuevo metido) y
+  "Rentabilidad de mercado" (el resto) — así un mes con una aportación
+  grande ya no se confunde con una buena rentabilidad.
+- **Selector de periodo y desglose en el gráfico de evolución**: botones
+  7D/1M/YTD/1A/Todo filtran el histórico mostrado (si no hay suficientes
+  días para el periodo elegido, se avisa y se enseña todo el histórico
+  disponible). Dos modos más, "Por categoría" y "Por titular", pintan un
+  área apilada usando el desglose que `portfolio_snapshots.breakdown` ya
+  guarda cada día — no ha hecho falta tocar el backend, solo leer un dato
+  que ya se guardaba y no se usaba.
+- **Rentabilidad diaria**: debajo del Patrimonio neto, "Desde el [fecha]:
+  ±X € (±Y%)" compara el snapshot más reciente con el anterior.
+- **Frescura de los datos por fuente**: en el panel de Sincronización,
+  "Indexa + IB: dato del DD/MM (hace Nd)" a partir de la fecha más reciente
+  entre las filas que reconocidamente vienen de la sincronización automática
+  (por su Broker/Concepto/Entidad), y un desplegable con las filas metidas a
+  mano que llevan más de 90 días sin tocarse.
+- **Alertas de vencimiento**: si algún proyecto de Crowdfunding tiene un
+  Vencimiento (mm/aaaa) a menos de 30 días, o ya pasado y sin marcar como
+  Vendido, aparece un aviso en la parte superior del Panel.
 - **Exportar CSV**: botón en el footer de Movimientos, descarga todas las
   filas de todas las categorías (`;` como separador, BOM UTF-8, pensado para
   Excel en español).
@@ -237,6 +280,31 @@ los días aunque nadie abra el dashboard. Si se añade alguna fuente más en
 el futuro, su sincronización va antes de este bloque, en la misma función,
 para que el snapshot del día siempre sea posterior a todas las fuentes
 automáticas.
+
+## Pasivos y el snapshot diario — qué no cambió
+
+Los pasivos son deliberadamente manuales y en vivo, no forman parte del
+snapshot diario ni de la función `indexa-sync`: `valor_total` en
+`portfolio_snapshots` sigue siendo el patrimonio bruto de siempre, calculado
+igual que antes. El "Patrimonio neto" del Panel se calcula siempre en el
+cliente, restando los pasivos actuales al bruto del momento — así el
+histórico de la evolución del patrimonio no cambia de significado con
+pasivos que no existían cuando se guardó cada punto antiguo.
+
+## Qué se quedó fuera de esta pasada (a propósito)
+
+Del estudio "Qué le falta al panel", esto es lo que NO se ha construido
+todavía, con el motivo:
+
+- **XIRR real** (rentabilidad anualizada con fechas exactas): se implementó
+  el paso intermedio más barato que proponía el estudio — separar aportado
+  de rentabilidad de mercado en el gráfico — pero no el solver iterativo de
+  XIRR en sí. Es el siguiente paso natural si esto se queda corto.
+- **Aviso de límite de aportación a planes de pensiones**: las filas de
+  Pensiones guardan el saldo total acumulado del plan, no un histórico de
+  aportaciones por año — no hay dato suficiente para calcular cuánto se ha
+  aportado *este año natural* sin añadir un campo o tabla nueva para
+  registrarlo. Se dejó fuera hasta decidir cómo quieres llevar ese registro.
 
 ## Seguridad — pendiente de tu parte
 
