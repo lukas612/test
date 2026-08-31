@@ -221,6 +221,40 @@ pensiones/plan de empleo, sin que haya que teclearlos a mano.
   tocan — el emparejamiento es solo por el número de cuenta de Indexa entre
   paréntesis, así que conviven sin pisarse.
 
+### Histórico real de aportaciones (`indexa_history`)
+
+La API de `performance` que ya se consultaba para el valor actual también
+devuelve `portfolios` (una entrada por día desde que se abrió la cuenta) y
+`net_amounts` (el neto aportado acumulado — aportes menos retiradas — por
+fecha, en formato `YYYYMMDD`). Antes esto se descartaba y solo se usaba el
+último día; ahora la función guarda el histórico completo en la tabla
+`indexa_history` (`account_number, fecha` como clave, `total_amount`,
+`net_amount`, `cash_amount`, `instruments_cost`) en cada sincronización, vía
+`upsert` — así una cuenta que lleva años abierta (827W4IP3 tiene histórico
+desde 2022-09-28, 1433 días) no pierde ese recorrido, y una resincronización
+diaria simplemente añade el día nuevo sin tocar el resto.
+
+El dashboard usa esto para el **aportado acumulado** del gráfico de
+evolución: para las filas de Indexa/Pensiones que tienen histórico
+(reconocidas por el número de cuenta entre paréntesis en el Concepto/Plan),
+ya no asume que todo el `invertido` se aportó el día del último sync —
+reconstruye la fecha real de cada aportación a partir de los saltos en
+`net_amount` día a día. El resto de filas (Acciones, ETF, Crypto,
+Crowdfunding, inmuebles, y las posiciones de IB) siguen usando su propia
+fecha de alta, que sí es la fecha real porque la escribes tú a mano.
+
+**Interactive Brokers no tiene esto todavía**: la Flex Query actual
+("panel") solo pide `EquitySummaryByReportDateInBase` y `OpenPosition` con
+periodo "Último día hábil" — trae el NAV de los dos últimos días, nada de
+histórico de movimientos ni de cuándo se metió cada euro. Para tener lo
+mismo que con Indexa haría falta, desde la propia cuenta de IB (Informes →
+Consultas Flex → editar la consulta "panel"): ampliar el rango de fechas
+(p. ej. "Desde la apertura de la cuenta" o un rango custom) y añadir una
+sección de **Cash Transactions** (o **Trades**) al informe — algo que solo
+se puede hacer desde el portal web de IB, no vía API. Mientras tanto, las
+posiciones de IB en el gráfico de "aportado" usan la fecha del último sync
+como aproximación, igual que antes.
+
 ## Sincronización con Interactive Brokers (Flex Web Service)
 
 Misma función `indexa-sync`, mismo botón, mismo cron — IB se añadió como un

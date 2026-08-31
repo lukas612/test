@@ -551,6 +551,7 @@
   const SUPABASE_SNAPSHOTS_TABLE = 'portfolio_snapshots';
   const PROPERTIES_TABLE = 'properties';
   const LIABILITIES_TABLE = 'liabilities';
+  const INDEXA_HISTORY_TABLE = 'indexa_history';
 
   const sbClient = supabase.createClient(DEFAULT_SUPABASE_CONFIG.url, DEFAULT_SUPABASE_CONFIG.key);
 
@@ -561,6 +562,7 @@
   let lastSnapshots = [];
   let evoMode = 'total';
   let evoPeriod = 'all';
+  let indexaHistoryByAccount = {};
 
   function authHeaders(){
     const token = (currentSession && currentSession.access_token) ? currentSession.access_token : supabaseConfig.key;
@@ -1377,23 +1379,59 @@
       return await res.json();
     }catch(e){ return []; }
   }
+  async function loadIndexaHistory(){
+    try{
+      const res = await fetch(supabaseConfig.url + '/rest/v1/' + INDEXA_HISTORY_TABLE + '?select=account_number,fecha,net_amount&order=fecha.asc', {
+        headers: authHeaders()
+      });
+      if(!res.ok) return;
+      const rows = await res.json();
+      const byAccount = {};
+      rows.forEach(r=>{
+        if(!byAccount[r.account_number]) byAccount[r.account_number] = [];
+        byAccount[r.account_number].push({ fecha: r.fecha, net_amount: Number(r.net_amount)||0 });
+      });
+      indexaHistoryByAccount = byAccount;
+    }catch(e){}
+  }
   function refreshEvolution(snapshots){
     lastSnapshots = snapshots || [];
     renderEvolutionChart(lastSnapshots);
     renderDailyDelta(lastSnapshots);
   }
 
+  function indexaAccountTag(campo1){
+    const m = String(campo1||'').match(/\(([A-Za-z0-9]+)\)\s*$/);
+    return m ? m[1] : null;
+  }
   function contributionEvents(){
     const events = [];
+    const coveredIndexaAccounts = new Set();
     CATS.forEach(c=>{
       (state[c.key]||[]).forEach(r=>{
         if(!r.fecha) return;
+        // Las cuentas de Indexa (indexa/pensiones) tienen histórico real día a día vía
+        // indexa_history — no asumimos que todo se aportó el día del último sync.
+        if(c.key === 'indexa' || c.key === 'pensiones'){
+          const acc = indexaAccountTag(r.a);
+          if(acc && indexaHistoryByAccount[acc]){ coveredIndexaAccounts.add(acc); return; }
+        }
         events.push({ fecha: r.fecha, delta: toEUR(r.inv, r.cur) });
       });
     });
     state.inmuebles.forEach(p=>{
       if(!p.fechaCompra) return;
       events.push({ fecha: p.fechaCompra, delta: Number(p.precioCompra)||0 });
+    });
+    Object.keys(indexaHistoryByAccount).forEach(acc=>{
+      if(!coveredIndexaAccounts.has(acc)) return; // cuenta ya no está en la cartera actual
+      const hist = indexaHistoryByAccount[acc];
+      let prev = 0;
+      hist.forEach(h=>{
+        const delta = h.net_amount - prev;
+        prev = h.net_amount;
+        if(delta !== 0) events.push({ fecha: h.fecha, delta });
+      });
     });
     events.sort((a,b)=> a.fecha < b.fecha ? -1 : (a.fecha > b.fecha ? 1 : 0));
     return events;
@@ -1553,6 +1591,7 @@
     }
     try{ state.inmuebles = await supabaseGetProperties(); }catch(e){}
     try{ state.pasivos = await supabaseGetLiabilities(); }catch(e){}
+    await loadIndexaHistory();
     document.getElementById('fxRate').value = state.fx;
     buildCards();
     buildPropertyCards();
@@ -1570,6 +1609,7 @@
       state = deserializeRows(rows);
       state.inmuebles = await supabaseGetProperties();
       state.pasivos = await supabaseGetLiabilities();
+      await loadIndexaHistory();
       document.getElementById('fxRate').value = state.fx;
       buildCards(); buildPropertyCards(); renderPasivos(); renderPropertySummary(); renderSummary();
       loadSnapshots().then(refreshEvolution);
@@ -1587,8 +1627,10 @@
       // abierto), así que aquí solo recargamos el estado en vez de volver a construirlo a mano.
       const rows = await supabaseGet();
       state = deserializeRows(rows);
+      await loadIndexaHistory();
       document.getElementById('fxRate').value = state.fx;
       buildCards(); renderSummary();
+      loadSnapshots().then(refreshEvolution);
       try{ localStorage.setItem('portfolio-data', JSON.stringify(state)); }catch(e){}
       const totalFailed = failed + ibFailed;
       const totalOk = updated + ibUpdated + ibInserted;
