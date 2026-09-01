@@ -1457,20 +1457,20 @@
     const coveredIndexaAccounts = new Set();
     CATS.forEach(c=>{
       (state[c.key]||[]).forEach(r=>{
-        if(!r.fecha) return;
         // Las cuentas de Indexa (indexa/pensiones) tienen histórico real día a día vía
         // indexa_history — no asumimos que todo se aportó el día del último sync.
         if(c.key === 'indexa' || c.key === 'pensiones'){
           const acc = indexaAccountTag(r.a);
           if(acc && indexaHistoryByAccount[acc]){ coveredIndexaAccounts.add(acc); return; }
         }
-        events.push({ fecha: r.fecha, delta: toEUR(r.inv, r.cur) });
+        // Filas antiguas sin fecha (metidas a mano antes de que el campo fuera obligatorio) no
+        // deben desaparecer del aportado — sin mejor dato, cuentan desde hoy en vez de nunca.
+        events.push({ fecha: r.fecha || todayISO(), delta: toEUR(r.inv, r.cur) });
       });
     });
     if(includeProperties){
       state.inmuebles.forEach(p=>{
-        if(!p.fechaCompra) return;
-        events.push({ fecha: p.fechaCompra, delta: Number(p.precioCompra)||0 });
+        events.push({ fecha: p.fechaCompra || todayISO(), delta: Number(p.precioCompra)||0 });
       });
     }
     Object.keys(indexaHistoryByAccount).forEach(acc=>{

@@ -158,7 +158,11 @@ GitHub Pages, ya configurado: **https://lukas612.github.io/test/**
   que ya existían, sin tabla nueva). Encima del gráfico, un resumen del
   periodo separa la variación en "Aportado" (dinero nuevo metido) y
   "Rentabilidad de mercado" (el resto) — así un mes con una aportación
-  grande ya no se confunde con una buena rentabilidad.
+  grande ya no se confunde con una buena rentabilidad. Las filas metidas a
+  mano hace tiempo sin fecha (algunas de las pensiones de Bankinter, algún
+  proyecto de Crowdfunding) ya no desaparecen del cómputo por no tener
+  fecha — antes se descartaban en silencio y el aportado salía por debajo
+  del real; ahora, a falta de una fecha mejor, cuentan desde hoy.
 - **Selector de periodo y desglose en el gráfico de evolución**: botones
   7D/1M/YTD/1A/Todo filtran el histórico mostrado (si no hay suficientes
   días para el periodo elegido, se avisa y se enseña todo el histórico
