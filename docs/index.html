@@ -259,7 +259,7 @@
       <div>
         <p class="hero-total-label">Patrimonio neto</p>
         <p class="hero-total-num" id="heroTotal">€0</p>
-        <p class="hero-sub">actualizado <b id="heroDate">—</b> · <span id="heroTotalPct" class="pos">+0,0%</span> global</p>
+        <p class="hero-sub">actualizado <b id="heroDate">—</b> · <span id="heroTotalPct" class="pos">+0,0%</span> en inversión</p>
         <p class="hero-sub" id="heroNetNote" style="display:none">Bruto <b id="heroGrossTotal">€0</b> · Pasivos <b id="heroPasivosNote" class="neg">−€0</b></p>
         <p class="hero-sub" id="heroDailyNote" style="display:none"></p>
       </div>
@@ -717,9 +717,13 @@
 
     document.getElementById('heroTotal').textContent = fmtEUR(netVal);
     document.getElementById('heroDate').textContent = new Date().toLocaleDateString('es-ES', { day:'2-digit', month:'short', year:'numeric' });
+    // El "% global" NO puede salir de totalPatrimonio(): mezcla la base de coste de la inversión
+    // con inmuebles heredados de coste 0, y esa división da porcentajes absurdos (p.ej. +800%).
+    // Usamos el retorno de la inversión (mismo cálculo que el bloque "Patrimonio de inversión"),
+    // que es la única cifra con una base de coste que tiene sentido económico.
     const heroTotalPctEl = document.getElementById('heroTotalPct');
-    heroTotalPctEl.textContent = fmtPct(g.plPct);
-    heroTotalPctEl.className = g.pl >= 0 ? 'pos' : 'neg';
+    heroTotalPctEl.textContent = fmtPct(gc.plPct);
+    heroTotalPctEl.className = gc.pl >= 0 ? 'pos' : 'neg';
 
     const netNoteEl = document.getElementById('heroNetNote');
     if(pas.total > 0){

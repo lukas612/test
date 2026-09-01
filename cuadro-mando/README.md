@@ -206,6 +206,17 @@ GitHub Pages, ya configurado: **https://lukas612.github.io/test/**
 - **Exportar CSV**: botón en el footer de Movimientos, descarga todas las
   filas de todas las categorías (`;` como separador, BOM UTF-8, pensado para
   Excel en español).
+- **Fix: el "% global" de arriba no coincidía con el "Patrimonio de
+  inversión"**. `heroTotalPct` salía de `totalPatrimonio()`, que mezcla la
+  base de coste de la inversión con la de los inmuebles. Un inmueble
+  heredado (coste 0 €, como Modesto Lafuente) hace que esa base de coste
+  total sea casi solo la de la inversión, y el `(valor-coste)/coste` da un
+  porcentaje absurdo (>800%) que no tiene nada que ver con el rendimiento
+  real. Ahora el pill de arriba usa `grandTotals()` (el mismo cálculo que el
+  bloque "Patrimonio de inversión" de abajo) y el texto pasó de "global" a
+  "en inversión" para que quede claro qué mide — un inmueble no tiene un
+  "% de rentabilidad" con sentido cuando su coste es 0, así que no se
+  intenta blendearlo en una sola cifra.
 - **Sincronización automática con Indexa Capital e Interactive Brokers**,
   diaria + botón manual "Actualizar Indexa + IB" — ver secciones propias más
   abajo.
