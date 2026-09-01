@@ -210,6 +210,10 @@
   .evo-line-2{ fill:none; stroke: var(--ink-faint); stroke-width:1.5; stroke-dasharray:4 3; }
   .evo-labels{ display:flex; justify-content:space-between; font-family:'IBM Plex Mono', monospace; font-size:11.5px; color: var(--ink-faint); margin-top:8px; }
   .chart-empty{ font-family:'IBM Plex Mono', monospace; font-size:12.5px; color: var(--ink-faint); padding:20px 0; text-align:center; }
+  .informe-actions{ display:flex; justify-content:flex-end; margin-bottom:14px; }
+  td.day-delta{ text-align:right; width:120px; font-family:'IBM Plex Mono', monospace; font-size:12.5px; }
+  td.day-delta.pos{ color: var(--positive); }
+  td.day-delta.neg{ color: var(--negative); }
 
   .evo-controls{ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:14px; }
   .evo-tabs, .evo-periods{ display:flex; gap:6px; flex-wrap:wrap; }
@@ -245,6 +249,7 @@
     <button class="tab-btn active" data-view="viewPanel">Panel</button>
     <button class="tab-btn" data-view="viewMovimientos">Movimientos</button>
     <button class="tab-btn" data-view="viewInmuebles">Inmuebles</button>
+    <button class="tab-btn" data-view="viewInforme">Informe</button>
   </div>
 
   <!-- ================= PANEL (visualización) ================= -->
@@ -438,6 +443,46 @@
 
     <p class="section-label">Inmuebles</p>
     <div class="cards" id="propertyCards"></div>
+
+  </div>
+
+  <!-- ================= INFORME (solo inversión, sin inmuebles) ================= -->
+  <div class="view" id="viewInforme">
+
+    <p class="section-label">Informe diario de inversión — sin inmuebles</p>
+    <div class="stat-row">
+      <div class="stat-box">
+        <div class="stat-label">Valor de inversión</div>
+        <div class="stat-value" id="infValorHoy">€0</div>
+        <div class="stat-sub" id="infValorHoyFecha">—</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Aportado (histórico)</div>
+        <div class="stat-value" id="infAportadoTotal">€0</div>
+      </div>
+      <div class="stat-box highlight">
+        <div class="stat-label">Rentabilidad de mercado (histórico)</div>
+        <div class="stat-value" id="infMercadoTotal">€0</div>
+        <div class="stat-sub" id="infMercadoPct">+0,0%</div>
+      </div>
+    </div>
+
+    <div class="informe-actions"><button class="btn" id="exportInformeBtn">Exportar informe CSV</button></div>
+
+    <div class="table-scroll">
+      <table>
+        <thead><tr>
+          <th>Fecha</th>
+          <th class="num">Valor inversión</th>
+          <th class="num">Variación día</th>
+          <th class="num">Aportado acum.</th>
+          <th class="num">Mercado acum.</th>
+          <th class="num">% mercado</th>
+        </tr></thead>
+        <tbody id="informeTableBody"></tbody>
+      </table>
+    </div>
+    <div class="chart-empty" id="informeEmpty" style="display:none">Aún no hay histórico — vuelve otro día para ver el informe diario.</div>
 
   </div>
 
@@ -1399,13 +1444,15 @@
     lastSnapshots = snapshots || [];
     renderEvolutionChart(lastSnapshots);
     renderDailyDelta(lastSnapshots);
+    renderInformeDiario();
   }
 
   function indexaAccountTag(campo1){
     const m = String(campo1||'').match(/\(([A-Za-z0-9]+)\)\s*$/);
     return m ? m[1] : null;
   }
-  function contributionEvents(){
+  function contributionEvents(includeProperties){
+    if(includeProperties === undefined) includeProperties = true;
     const events = [];
     const coveredIndexaAccounts = new Set();
     CATS.forEach(c=>{
@@ -1420,10 +1467,12 @@
         events.push({ fecha: r.fecha, delta: toEUR(r.inv, r.cur) });
       });
     });
-    state.inmuebles.forEach(p=>{
-      if(!p.fechaCompra) return;
-      events.push({ fecha: p.fechaCompra, delta: Number(p.precioCompra)||0 });
-    });
+    if(includeProperties){
+      state.inmuebles.forEach(p=>{
+        if(!p.fechaCompra) return;
+        events.push({ fecha: p.fechaCompra, delta: Number(p.precioCompra)||0 });
+      });
+    }
     Object.keys(indexaHistoryByAccount).forEach(acc=>{
       if(!coveredIndexaAccounts.has(acc)) return; // cuenta ya no está en la cartera actual
       const hist = indexaHistoryByAccount[acc];
@@ -1437,13 +1486,97 @@
     events.sort((a,b)=> a.fecha < b.fecha ? -1 : (a.fecha > b.fecha ? 1 : 0));
     return events;
   }
-  function aportadoSeriesFor(dates){
-    const events = contributionEvents();
+  function aportadoSeriesFor(dates, includeProperties){
+    const events = contributionEvents(includeProperties);
     let idx = 0, sum = 0;
     return dates.map(d=>{
       while(idx < events.length && events[idx].fecha <= d){ sum += events[idx].delta; idx++; }
       return sum;
     });
+  }
+
+  /* ---------- Informe diario de inversión (sin inmuebles) ---------- */
+  function investmentDailyReport(){
+    if(!lastSnapshots || !lastSnapshots.length) return [];
+    const dates = lastSnapshots.map(s=>s.fecha);
+    const valores = lastSnapshots.map(s=>{
+      const cats = (s.breakdown && s.breakdown.categorias) || {};
+      return Object.values(cats).reduce((sum,v)=> sum + (Number(v)||0), 0);
+    });
+    const aportado = aportadoSeriesFor(dates, false);
+    return dates.map((fecha, i)=>{
+      const valor = valores[i];
+      const prevValor = i>0 ? valores[i-1] : null;
+      const deltaDia = prevValor===null ? null : valor - prevValor;
+      const deltaDiaPct = (prevValor!==null && prevValor!==0) ? (deltaDia/prevValor*100) : null;
+      const aport = aportado[i];
+      const mercado = valor - aport;
+      const mercadoPct = aport>0 ? (mercado/aport*100) : 0;
+      return { fecha, valor, deltaDia, deltaDiaPct, aportado: aport, mercado, mercadoPct };
+    });
+  }
+  function renderInformeDiario(){
+    const tbody = document.getElementById('informeTableBody');
+    const emptyEl = document.getElementById('informeEmpty');
+    if(!tbody) return;
+    const rows = investmentDailyReport();
+    if(!rows.length){
+      tbody.innerHTML = '';
+      if(emptyEl) emptyEl.style.display = '';
+      document.getElementById('infValorHoy').textContent = '€0';
+      document.getElementById('infValorHoyFecha').textContent = '—';
+      document.getElementById('infAportadoTotal').textContent = '€0';
+      document.getElementById('infMercadoTotal').textContent = '€0';
+      document.getElementById('infMercadoPct').textContent = '+0,0%';
+      return;
+    }
+    if(emptyEl) emptyEl.style.display = 'none';
+
+    const last = rows[rows.length-1];
+    document.getElementById('infValorHoy').textContent = fmtEUR(last.valor);
+    document.getElementById('infValorHoyFecha').textContent = 'a ' + fmtShortDate(last.fecha);
+    document.getElementById('infAportadoTotal').textContent = fmtEUR(last.aportado);
+    const mercadoEl = document.getElementById('infMercadoTotal');
+    mercadoEl.textContent = (last.mercado>=0?'+':'') + fmtEUR(last.mercado);
+    mercadoEl.className = 'stat-value ' + (last.mercado>=0?'pos':'neg');
+    document.getElementById('infMercadoPct').textContent = fmtPct(last.mercadoPct) + ' sobre aportado';
+
+    tbody.innerHTML = rows.slice().reverse().map(r=>{
+      const deltaCls = r.deltaDia===null ? '' : (r.deltaDia>=0?'pos':'neg');
+      const deltaTxt = r.deltaDia===null ? '—' : (r.deltaDia>=0?'+':'') + fmtEUR(r.deltaDia) + (r.deltaDiaPct!==null ? ' ('+fmtPct(r.deltaDiaPct)+')' : '');
+      const mercadoCls = r.mercado>=0?'pos':'neg';
+      return '<tr>' +
+        '<td>'+r.fecha+'</td>' +
+        '<td class="num">'+fmtEUR(r.valor)+'</td>' +
+        '<td class="day-delta '+deltaCls+'">'+deltaTxt+'</td>' +
+        '<td class="num">'+fmtEUR(r.aportado)+'</td>' +
+        '<td class="gain '+mercadoCls+'">'+(r.mercado>=0?'+':'')+fmtEUR(r.mercado)+'</td>' +
+        '<td class="gain '+mercadoCls+'">'+fmtPct(r.mercadoPct)+'</td>' +
+      '</tr>';
+    }).join('');
+  }
+  function exportInformeCSV(){
+    const rows = investmentDailyReport();
+    const headers = ['Fecha','ValorInversion','VariacionDia','VariacionDiaPct','AportadoAcumulado','RentabilidadMercadoAcumulada','RentabilidadMercadoPct'];
+    const lines = [headers.join(';')];
+    rows.forEach(r=>{
+      lines.push([
+        r.fecha, r.valor.toFixed(2),
+        r.deltaDia===null ? '' : r.deltaDia.toFixed(2),
+        r.deltaDiaPct===null ? '' : r.deltaDiaPct.toFixed(2),
+        r.aportado.toFixed(2), r.mercado.toFixed(2), r.mercadoPct.toFixed(2)
+      ].map(toCSVValue).join(';'));
+    });
+    const csv = '﻿' + lines.join('\r\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'informe-inversion-' + todayISO() + '.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   }
   function filterSnapshotsByPeriod(snapshots, period){
     if(!snapshots.length || period === 'all') return { list: snapshots, truncated: false };
@@ -1792,6 +1925,7 @@
     URL.revokeObjectURL(url);
   }
   document.getElementById('exportCsvBtn').addEventListener('click', exportCSV);
+  document.getElementById('exportInformeBtn').addEventListener('click', exportInformeCSV);
 
   /* ---------- Venta → Efectivo ---------- */
   function moveSaleToEfectivo(catObj, soldRow){

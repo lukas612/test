@@ -5,14 +5,16 @@ Handoff desde claude.ai a Claude Code, continuado y cerrado por Claude Code.
 ## Qué es esto
 
 Dashboard de patrimonio personal (`index.html`, un único archivo autocontenido:
-HTML + CSS + JS vanilla, sin build step). Dos pestañas:
+HTML + CSS + JS vanilla, sin build step). Cuatro pestañas:
 
-- **Panel**: solo visualización (total, plusvalía latente/realizada/total,
+- **Panel**: solo visualización (patrimonio neto, plusvalía latente/realizada/total,
   espectro de liquidez, distribución por titular, distribución por producto,
   evolución del patrimonio en el tiempo).
 - **Movimientos**: tipo de cambio, sincronización con Supabase, formulario de
-  alta de inversiones, y tablas editables por categoría (Acciones, ETF, Indexa
-  Capital, Crypto, Plan de Pensiones, Crowdfunding).
+  alta de inversiones, tablas editables por categoría (Acciones, ETF, Indexa
+  Capital, Crypto, Plan de Pensiones, Crowdfunding) y Pasivos.
+- **Inmuebles**: ficha por propiedad y registro mensual de alquiler/gastos.
+- **Informe**: informe diario centrado solo en inversión, sin inmuebles.
 
 Cada fila de inversión tiene: Titular (Lukas personal / Lukas & Adriana /
 Whitenut / Lovicka), Fecha, campos según categoría, Moneda (EUR/USD),
@@ -185,6 +187,18 @@ GitHub Pages, ya configurado: **https://lukas612.github.io/test/**
 - **Alertas de vencimiento**: si algún proyecto de Crowdfunding tiene un
   Vencimiento (mm/aaaa) a menos de 30 días, o ya pasado y sin marcar como
   Vendido, aparece un aviso en la parte superior del Panel.
+- **Pestaña "Informe"**: informe diario centrado solo en inversión — los
+  inmuebles quedan fuera a propósito. Arriba, tres cifras: valor de
+  inversión actual, aportado histórico y rentabilidad de mercado histórica
+  (ambas calculadas igual que el "Aportado"/"Rentabilidad de mercado" del
+  gráfico de evolución, pero sin la parte de `contributionEvents()` que
+  añade los inmuebles — `aportadoSeriesFor(dates, false)`). Debajo, una
+  tabla con un día por fila (el más reciente arriba): valor de inversión,
+  variación respecto al día anterior (€ y %), aportado acumulado,
+  rentabilidad de mercado acumulada y su %. El valor de cada día sale de
+  sumar `portfolio_snapshots.breakdown.categorias` (que nunca incluyó
+  inmuebles) en vez de `valor_total` (que sí los incluye). Botón propio
+  "Exportar informe CSV" con las mismas columnas que la tabla.
 - **Exportar CSV**: botón en el footer de Movimientos, descarga todas las
   filas de todas las categorías (`;` como separador, BOM UTF-8, pensado para
   Excel en español).
