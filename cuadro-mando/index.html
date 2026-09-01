@@ -1431,11 +1431,23 @@
   }
   async function loadIndexaHistory(){
     try{
-      const res = await fetch(supabaseConfig.url + '/rest/v1/' + INDEXA_HISTORY_TABLE + '?select=account_number,fecha,net_amount,total_amount&order=fecha.asc', {
-        headers: authHeaders()
-      });
-      if(!res.ok) return;
-      const rows = await res.json();
+      // PostgREST corta las respuestas a 1000 filas por defecto. Con varios años de
+      // histórico diario por cuenta, indexa_history supera eso de sobra — sin paginar,
+      // "order=fecha.asc" devolvía solo las filas más antiguas y todo el histórico
+      // reciente (y cuentas enteras, si empezaban tarde) desaparecía en silencio.
+      const PAGE = 1000;
+      let offset = 0;
+      const rows = [];
+      while(true){
+        const res = await fetch(supabaseConfig.url + '/rest/v1/' + INDEXA_HISTORY_TABLE + '?select=account_number,fecha,net_amount,total_amount&order=fecha.asc', {
+          headers: Object.assign({}, authHeaders(), { Range: offset + '-' + (offset + PAGE - 1) })
+        });
+        if(!res.ok) break;
+        const page = await res.json();
+        rows.push.apply(rows, page);
+        if(page.length < PAGE) break;
+        offset += PAGE;
+      }
       const byAccount = {};
       rows.forEach(r=>{
         if(!byAccount[r.account_number]) byAccount[r.account_number] = [];

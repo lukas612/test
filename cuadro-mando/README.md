@@ -295,6 +295,24 @@ se puede hacer desde el portal web de IB, no vía API. Mientras tanto, las
 posiciones de IB en el gráfico de "aportado" usan la fecha del último sync
 como aproximación, igual que antes.
 
+**Fix: `indexa_history` se estaba cortando en 1000 filas**. PostgREST (la
+API REST de Supabase) devuelve como máximo 1000 filas por request si no se
+pagina, y `indexa_history` ya tiene más de 3200 (varios años de histórico
+diario en 4 cuentas). `loadIndexaHistory()` pedía todo con un único
+`fetch(...&order=fecha.asc)`, así que solo llegaban las filas más antiguas
+— hasta el 2024-10-27 — y todo lo posterior se perdía en silencio: las
+cuentas que empezaron después de esa fecha (los planes de pensión vía Caser)
+desaparecían del todo, y las dos cuentas de Indexa quedaban "congeladas" en
+su valor de 2024. Esto hacía que "Aportado" (evolución, Indexa histórico
+completo, pestaña Informe) saliera muy por debajo de "Invertido" del hero —
+detectado porque el usuario reportó "76.617 € aportado" cuando debía ser
+101.613 €, y la resta cuadraba exactamente con lo que esas dos cuentas
+habían dejado de aportar desde 2024. Arreglado paginando con la cabecera
+`Range` (1000 filas por página, hasta que una página vuelve incompleta).
+Mismo riesgo, aunque aún lejos, en `portfolio_snapshots` (una fila por día,
+tardará ~3 años en pasar de 1000) — si algún día el histórico se ve corto
+por el principio, es la primera sospecha.
+
 ## Sincronización con Interactive Brokers (Flex Web Service)
 
 Misma función `indexa-sync`, mismo botón, mismo cron — IB se añadió como un
