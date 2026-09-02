@@ -183,6 +183,14 @@ GitHub Pages, ya configurado: **https://lukas612.github.io/test/**
   más atrás para la parte que sí lo permite.
 - **Rentabilidad diaria**: debajo del Patrimonio neto, "Desde el [fecha]:
   ±X € (±Y%)" compara el snapshot más reciente con el anterior.
+- **Qué se movió, no solo el total**: debajo de esa línea, una fila de
+  categorías ("Indexa Capital +300 €", "Acciones −300 €"...) con el delta
+  de cada categoría entre esos dos mismos snapshots (`categoryDailyDeltas()`,
+  restando `breakdown.categorias` del snapshot de hoy menos el de ayer, más
+  Inmuebles aparte), ordenadas de mayor a menor movimiento absoluto y
+  ocultando las que no se movieron. Antes solo se veía el neto del día; con
+  varias categorías compensándose entre sí (una sube, otra baja) el número
+  general no decía nada de qué había pasado realmente.
 - **Frescura de los datos por fuente**: en el panel de Sincronización,
   "Indexa + IB: dato del DD/MM (hace Nd)" a partir de la fecha más reciente
   entre las filas que reconocidamente vienen de la sincronización automática
