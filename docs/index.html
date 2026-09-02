@@ -80,6 +80,10 @@
   .panel-title{ font-family:'IBM Plex Mono', monospace; font-size: 11px; letter-spacing:0.1em; text-transform:uppercase; color: var(--ink-faint); margin: 0 0 12px; }
   .fxbar{ display:flex; align-items:center; gap: 10px; flex-wrap: wrap; font-family:'IBM Plex Mono', monospace; font-size: 12.5px; color: var(--ink-dim); }
   .fxbar input{ background: var(--surface-2); border: 1px solid var(--line); color: var(--ink); font-family:'IBM Plex Mono', monospace; font-size: 12.5px; width: 80px; padding: 5px 8px; border-radius: 5px; text-align:right; }
+  .alloc-target-bar{ display:flex; align-items:center; gap: 16px; flex-wrap: wrap; font-family:'IBM Plex Mono', monospace; font-size: 12.5px; color: var(--ink-dim); }
+  .alloc-target-field{ display:flex; align-items:center; gap:8px; }
+  .alloc-target-field input{ background: var(--surface-2); border: 1px solid var(--line); color: var(--ink); font-family:'IBM Plex Mono', monospace; font-size: 12.5px; width: 60px; padding: 5px 8px; border-radius: 5px; text-align:right; }
+  .alloc-target-note{ color: var(--ink-faint); font-size:11.5px; flex-basis:100%; line-height:1.5; }
 
   .sync-row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
   .sync-row input[type=text], .sync-row input[type=password]{ background: var(--surface-2); border: 1px solid var(--line); color: var(--ink); font-family:'IBM Plex Mono', monospace; font-size: 12px; padding: 7px 9px; border-radius: 5px; }
@@ -117,6 +121,8 @@
   .spec-item .d{ font-size: 12px; color: var(--ink-dim); font-family:'IBM Plex Mono', monospace; margin-top:2px;}
   .spec-item .note{ font-size: 11.5px; color: var(--ink-faint); margin-top: 3px; max-width: 240px; }
   .spec-item .gain{ font-size: 12px; font-family:'IBM Plex Mono', monospace; margin-top:2px; }
+  .alloc-dev{ font-size: 11.5px; font-family:'IBM Plex Mono', monospace; color: var(--ink-faint); margin-top:3px; }
+  .alloc-dev.warn{ color: var(--negative); }
   .spec-item .gain.pos{ color: var(--positive); }
   .spec-item .gain.neg{ color: var(--negative); }
 
@@ -236,6 +242,7 @@
   .evo-legend .dot{ width:8px; height:8px; border-radius:2px; display:inline-block; margin-right:5px; vertical-align:middle; }
   .evo-legend .swatch-line{ display:inline-block; width:14px; height:0; border-top:1.5px dashed var(--ink-faint); margin-right:5px; vertical-align:middle; }
   .evo-note{ font-family:'IBM Plex Mono', monospace; font-size:11px; color:var(--ink-faint); margin-top:8px; }
+  .fiscal-caveat{ font-family:'IBM Plex Mono', monospace; font-size:11.5px; color:var(--ink-faint); margin:-6px 0 14px; line-height:1.5; }
 </style>
 </head>
 <body>
@@ -325,6 +332,11 @@
         <div class="stat-value" id="statTotal">€0</div>
         <div class="stat-sub" id="statTotalPct">+0,0%</div>
       </div>
+      <div class="stat-box">
+        <div class="stat-label">TIR anualizada (XIRR)</div>
+        <div class="stat-value" id="statXirr">—</div>
+        <div class="stat-sub" id="statXirrSub">según fecha real de cada aportación</div>
+      </div>
     </div>
 
     <div class="spectrum-block">
@@ -337,6 +349,12 @@
       <p class="section-label">Distribución por titular</p>
       <div class="spectrum" id="specTitular"></div>
       <div class="spectrum-legend" id="specTitularLegend"></div>
+    </div>
+
+    <div class="spectrum-block">
+      <p class="section-label">Exposición por divisa — de la inversión</p>
+      <div class="spectrum" id="specDivisa"></div>
+      <div class="spectrum-legend" id="specDivisaLegend"></div>
     </div>
 
     <p class="section-label">Distribución por producto</p>
@@ -380,6 +398,16 @@
         <span>1 USD =</span>
         <input id="fxRate" type="number" step="0.0001" min="0" value="0.92">
         <span>EUR — usado para consolidar filas en USD</span>
+      </div>
+    </div>
+
+    <div class="panel">
+      <p class="panel-title">Objetivo de asignación</p>
+      <div class="alloc-target-bar">
+        <div class="alloc-target-field"><label>Líquido %</label><input id="targetLiquido" type="number" step="1" min="0" max="100" placeholder="—"></div>
+        <div class="alloc-target-field"><label>Jubilación %</label><input id="targetJubilacion" type="number" step="1" min="0" max="100" placeholder="—"></div>
+        <div class="alloc-target-field"><label>A plazo %</label><input id="targetPlazo" type="number" step="1" min="0" max="100" placeholder="—"></div>
+        <span class="alloc-target-note">Deja en blanco para desactivar el aviso de esa categoría. Los tres % son sobre la inversión (sin inmuebles) — no coinciden con los % del "Espectro de liquidez", que sí los incluye.</span>
       </div>
     </div>
 
@@ -498,6 +526,24 @@
     </div>
     <div class="chart-empty" id="informeEmpty" style="display:none">Aún no hay histórico — vuelve otro día para ver el informe diario.</div>
 
+    <p class="section-label">Resumen fiscal por año</p>
+    <p class="fiscal-caveat">Estimación orientativa a partir de las plusvalías realizadas (filas marcadas
+      "Vendido") con los tramos agregados de la base del ahorro. No incluye dividendos, intereses ni
+      otras rentas — la declaración real puede salir distinta.</p>
+    <div class="table-scroll">
+      <table>
+        <thead><tr>
+          <th>Año</th>
+          <th class="num">Coste vendido</th>
+          <th class="num">Ingresado por venta</th>
+          <th class="num">Plusvalía realizada</th>
+          <th class="num">IRPF estimado</th>
+        </tr></thead>
+        <tbody id="fiscalTableBody"></tbody>
+      </table>
+    </div>
+    <div class="chart-empty" id="fiscalEmpty" style="display:none">Sin ventas registradas todavía.</div>
+
   </div>
 
 </div>
@@ -533,7 +579,7 @@
   }
 
   function defaultState(){
-    const s = { fx: 0.92, inmuebles: [], pasivos: [] };
+    const s = { fx: 0.92, inmuebles: [], pasivos: [], targetAlloc: { liquido:null, jubilacion:null, plazo:null } };
     CATS.forEach(c=>{ s[c.key] = [blankRow(c)]; });
     s.indexa[0].a = 'Cartera indexada';
     const cf = CATS.find(c=>c.key==='crowdfunding');
@@ -647,6 +693,21 @@
     rows.forEach(r=>{ if(r.vendido) return; inv += toEUR(r.inv, r.cur); val += toEUR(r.val, r.cur); });
     return { inv, val, pl: val-inv, plPct: inv>0 ? ((val-inv)/inv*100) : 0 };
   }
+  const CURRENCY_HEX = { EUR:'#5FA37A', USD:'#C9A227' };
+  function currencyTotals(){
+    // Solo la inversión (igual que "Patrimonio de inversión") — los inmuebles aquí
+    // siempre son EUR, así que meterlos solo diluiría el % sin aportar información
+    // sobre el riesgo de divisa real.
+    const out = {};
+    CATS.forEach(c=>{
+      (state[c.key]||[]).forEach(r=>{
+        if(r.vendido) return;
+        const cur = r.cur === 'USD' ? 'USD' : 'EUR';
+        out[cur] = (out[cur]||0) + toEUR(r.val, r.cur);
+      });
+    });
+    return out;
+  }
   function vehTotals(){
     const out = {};
     VEHS.forEach(v=>{ out[v.key] = 0; });
@@ -686,6 +747,41 @@
     });
     return { cost, proceeds, gain: proceeds-cost, gainPct: cost>0 ? ((proceeds-cost)/cost*100) : 0 };
   }
+  // Tramos de la base del ahorro (IRPF estatal+autonómico agregado, España, referencia 2024).
+  // Estimación orientativa: solo mete la ganancia patrimonial de este dashboard en la base,
+  // sin dividendos/intereses ni otras ganancias — la Renta real puede salir distinta.
+  const AHORRO_BRACKETS = [ [6000,0.19], [44000,0.21], [150000,0.23], [100000,0.27], [Infinity,0.28] ];
+  function estimateAhorroTax(gain){
+    if(gain <= 0) return 0;
+    let remaining = gain, tax = 0;
+    for(const [width, rate] of AHORRO_BRACKETS){
+      if(remaining <= 0) break;
+      const chunk = Math.min(remaining, width);
+      tax += chunk * rate;
+      remaining -= chunk;
+    }
+    return tax;
+  }
+  function fiscalYearSummary(){
+    const byYear = {};
+    CATS.forEach(cat=>{
+      (state[cat.key]||[]).forEach(r=>{
+        if(!r.vendido) return;
+        const year = String(r.fechaVenta||'').slice(0,4);
+        if(!/^\d{4}$/.test(year)) return;
+        if(!byYear[year]) byYear[year] = { year, cost:0, proceeds:0, gain:0 };
+        const cost = toEUR(r.inv, r.cur), proceeds = toEUR(r.importeVenta, r.cur);
+        byYear[year].cost += cost;
+        byYear[year].proceeds += proceeds;
+        byYear[year].gain += (proceeds - cost);
+      });
+    });
+    return Object.keys(byYear).sort().reverse().map(y=>{
+      const row = byYear[y];
+      row.taxEstimate = estimateAhorroTax(row.gain);
+      return row;
+    });
+  }
   function catRealizedTotals(key){
     let cost=0, proceeds=0;
     (state[key]||[]).forEach(r=>{
@@ -719,6 +815,23 @@
     const out = {};
     Object.keys(LIQ_MAP).forEach(bucket=>{ let val=0; LIQ_MAP[bucket].forEach(k=>{ val += catTotals(k).val; }); out[bucket]=val; });
     out.inmobiliario = propertiesTotals().val;
+    return out;
+  }
+  const ALLOC_ALERT_THRESHOLD = 5; // puntos porcentuales de desviación para avisar
+  function allocationDeviations(){
+    // Sobre la inversión (liquido+jubilacion+plazo == grandTotals().val, sin inmuebles) —
+    // igual base que "Patrimonio de inversión", para que el objetivo tenga sentido
+    // aunque el valor de un inmueble heredado (coste 0) distorsione otros % del panel.
+    const ta = state.targetAlloc || {};
+    const lt = liqTotals();
+    const base = grandTotals().val;
+    const out = [];
+    ['liquido','jubilacion','plazo'].forEach(key=>{
+      const target = ta[key];
+      if(target === null || target === undefined || target === '') return;
+      const actual = base>0 ? (lt[key]/base*100) : 0;
+      out.push({ key, actual, target, deviation: actual - target });
+    });
     return out;
   }
 
@@ -796,6 +909,8 @@
     const specLiqLegendEl = document.getElementById('specLiquidezLegend');
     specLiqSegEl.innerHTML = '';
     specLiqLegendEl.innerHTML = '';
+    const allocDevs = allocationDeviations();
+    const allocDevByKey = {}; allocDevs.forEach(d=>{ allocDevByKey[d.key] = d; });
     LIQ_BUCKETS.forEach(b=>{
       const val = lt[b.key] || 0;
       const pct = totalVal>0 ? (val/totalVal*100) : 0;
@@ -806,9 +921,11 @@
       requestAnimationFrame(()=>{ seg.style.width = pct + '%'; });
       const item = document.createElement('div');
       item.className = 'spec-item';
+      const dev = allocDevByKey[b.key];
+      const devHtml = dev ? '<div class="'+(Math.abs(dev.deviation)>ALLOC_ALERT_THRESHOLD ? 'alloc-dev warn' : 'alloc-dev')+'">Objetivo '+dev.target.toFixed(0)+'% de la inversión — '+(dev.deviation>=0?'+':'')+dev.deviation.toFixed(1)+'pp</div>' : '';
       item.innerHTML = '<div class="spec-dot" style="background:'+b.hex+'"></div>' +
         '<div><div class="t">'+b.label+'</div><div class="d">'+fmtEUR(val)+' · '+pct.toFixed(0)+'%</div>' +
-        '<div class="note">'+b.note+'</div></div>';
+        '<div class="note">'+b.note+'</div>' + devHtml + '</div>';
       specLiqLegendEl.appendChild(item);
     });
 
@@ -837,6 +954,30 @@
         (rt.cost>0 ? '<div class="gain '+(rt.gain>=0?'pos':'neg')+'">Realizada: '+(rt.gain>=0?'+':'')+fmtEUR(rt.gain)+' · '+fmtPct(rt.gainPct)+'</div>' : '') +
         (v.note ? '<div class="note">'+v.note+'</div>' : '') + '</div>';
       specLegendEl.appendChild(item);
+    });
+
+    const ct = currencyTotals();
+    const invVal = gc.val || 1;
+    const specDivSegEl = document.getElementById('specDivisa');
+    const specDivLegendEl = document.getElementById('specDivisaLegend');
+    specDivSegEl.innerHTML = '';
+    specDivLegendEl.innerHTML = '';
+    ['EUR','USD'].forEach(cur=>{
+      const val = ct[cur] || 0;
+      if(val <= 0) return;
+      const pct = invVal>0 ? (val/invVal*100) : 0;
+      const hex = CURRENCY_HEX[cur];
+      const seg = document.createElement('div');
+      seg.className = 'seg';
+      seg.style.background = hex;
+      specDivSegEl.appendChild(seg);
+      requestAnimationFrame(()=>{ seg.style.width = pct + '%'; });
+      const item = document.createElement('div');
+      item.className = 'spec-item';
+      item.innerHTML = '<div class="spec-dot" style="background:'+hex+'"></div>' +
+        '<div><div class="t">'+cur+'</div><div class="d">'+fmtEUR(val)+' · '+pct.toFixed(0)+'%</div>' +
+        (cur==='USD' ? '<div class="note">Fluctúa con el tipo de cambio USD/EUR</div>' : '') + '</div>';
+      specDivLegendEl.appendChild(item);
     });
 
     let cum = 0; const stops = [];
@@ -877,7 +1018,32 @@
     renderDailyDelta(lastSnapshots);
     renderAlertBar();
     renderDataFreshness();
+    renderFiscalSummary();
+    renderXIRR();
     refreshScrollFades();
+  }
+
+  function renderFiscalSummary(){
+    const tbody = document.getElementById('fiscalTableBody');
+    const emptyEl = document.getElementById('fiscalEmpty');
+    if(!tbody) return;
+    const rows = fiscalYearSummary();
+    if(!rows.length){
+      tbody.innerHTML = '';
+      if(emptyEl) emptyEl.style.display = '';
+      return;
+    }
+    if(emptyEl) emptyEl.style.display = 'none';
+    tbody.innerHTML = rows.map(r=>{
+      const cls = r.gain>=0?'pos':'neg';
+      return '<tr>' +
+        '<td>'+r.year+'</td>' +
+        '<td class="num">'+fmtEUR(r.cost)+'</td>' +
+        '<td class="num">'+fmtEUR(r.proceeds)+'</td>' +
+        '<td class="gain '+cls+'">'+(r.gain>=0?'+':'')+fmtEUR(r.gain)+'</td>' +
+        '<td class="num">'+fmtEUR(r.taxEstimate)+'</td>' +
+      '</tr>';
+    }).join('');
   }
 
   function fmtShortDate(iso){
@@ -960,14 +1126,27 @@
   function renderAlertBar(){
     const el = document.getElementById('alertBar');
     if(!el) return;
-    const alerts = vencimientoAlerts();
-    if(!alerts.length){ el.style.display = 'none'; return; }
+    const vAlerts = vencimientoAlerts();
+    const aDevs = allocationDeviations().filter(d=>Math.abs(d.deviation) > ALLOC_ALERT_THRESHOLD);
+    if(!vAlerts.length && !aDevs.length){ el.style.display = 'none'; return; }
     el.style.display = '';
-    el.innerHTML = '<p class="alert-eyebrow">Vencimientos próximos</p>' +
-      alerts.map(a=>{
-        const when = a.days < 0 ? 'venció hace '+Math.abs(a.days)+' días' : (a.days===0 ? 'vence hoy' : 'vence en '+a.days+' días');
-        return '<div class="alert-item"><b>'+escapeHtml(a.nombre)+'</b>'+(a.plataforma?' ('+escapeHtml(a.plataforma)+')':'')+' — '+when+'.</div>';
-      }).join('');
+    let html = '';
+    if(vAlerts.length){
+      html += '<p class="alert-eyebrow">Vencimientos próximos</p>' +
+        vAlerts.map(a=>{
+          const when = a.days < 0 ? 'venció hace '+Math.abs(a.days)+' días' : (a.days===0 ? 'vence hoy' : 'vence en '+a.days+' días');
+          return '<div class="alert-item"><b>'+escapeHtml(a.nombre)+'</b>'+(a.plataforma?' ('+escapeHtml(a.plataforma)+')':'')+' — '+when+'.</div>';
+        }).join('');
+    }
+    if(aDevs.length){
+      const labelByKey = {}; LIQ_BUCKETS.forEach(b=>{ labelByKey[b.key] = b.label; });
+      html += '<p class="alert-eyebrow">Desviación de asignación</p>' +
+        aDevs.map(d=>{
+          const dir = d.deviation > 0 ? 'por encima del' : 'por debajo del';
+          return '<div class="alert-item"><b>'+escapeHtml(labelByKey[d.key]||d.key)+'</b>: '+d.actual.toFixed(0)+'% actual, '+dir+' objetivo ('+d.target.toFixed(0)+'%) por '+Math.abs(d.deviation).toFixed(1)+'pp.</div>';
+        }).join('');
+    }
+    el.innerHTML = html;
   }
 
   const IB_ACCOUNT_LABELS = new Set(['IB Personal Long','IB Personal','IB Conjunta']);
@@ -1418,6 +1597,22 @@
     if(!insRes.ok){ throw new Error('HTTP ' + insRes.status + ' al insertar inmuebles'); }
     return true;
   }
+  const SETTINGS_TABLE = 'app_settings';
+  async function supabaseGetSetting(key){
+    const res = await fetch(supabaseConfig.url + '/rest/v1/' + SETTINGS_TABLE + '?select=value&key=eq.' + encodeURIComponent(key), { headers: authHeaders() });
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    const rows = await res.json();
+    return rows.length ? rows[0].value : null;
+  }
+  async function supabaseSetSetting(key, value){
+    const res = await fetch(supabaseConfig.url + '/rest/v1/' + SETTINGS_TABLE, {
+      method:'POST',
+      headers: Object.assign({}, authHeaders(), { 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates,return=minimal' }),
+      body: JSON.stringify({ key, value, updated_at: new Date().toISOString() })
+    });
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    return true;
+  }
   function toLiabilityDbRow(l){
     return { titular: l.veh, nombre: l.nombre, tipo: l.tipo, saldo_pendiente: l.saldoPendiente, cuota_mensual: l.cuotaMensual, inmueble_vinculado: l.inmuebleVinculado||'', fecha: l.fecha||'' };
   }
@@ -1560,6 +1755,56 @@
       while(idx < events.length && events[idx].fecha <= d){ sum += events[idx].delta; idx++; }
       return sum;
     });
+  }
+
+  // XIRR por Newton-Raphson: rate tal que NPV(cashflows) = 0. cashflows = [{date, amount}],
+  // amount<0 = dinero que sale de tu bolsillo (aportación), amount>0 = dinero que "recibes"
+  // (incluye el valor actual como si se liquidase hoy).
+  function xirr(cashflows){
+    if(!cashflows || cashflows.length < 2) return null;
+    const sorted = cashflows.slice().sort((a,b)=> a.date < b.date ? -1 : (a.date > b.date ? 1 : 0));
+    const t0 = new Date(sorted[0].date+'T00:00:00Z').getTime();
+    const spanDays = (new Date(sorted[sorted.length-1].date+'T00:00:00Z').getTime() - t0) / 86400000;
+    if(spanDays < 1) return null; // todo el histórico cabe en un día — no se puede anualizar
+    const years = d => (new Date(d+'T00:00:00Z').getTime() - t0) / 86400000 / 365;
+    const npv = rate => sorted.reduce((sum,cf)=> sum + cf.amount / Math.pow(1+rate, years(cf.date)), 0);
+    const dnpv = rate => sorted.reduce((sum,cf)=> sum - cf.amount * years(cf.date) / Math.pow(1+rate, years(cf.date)+1), 0);
+    let rate = 0.1;
+    for(let i=0;i<200;i++){
+      const f = npv(rate), df = dnpv(rate);
+      if(!isFinite(f) || !isFinite(df) || Math.abs(df) < 1e-9) break;
+      let next = rate - f/df;
+      if(next <= -0.9999) next = (rate + -0.9999)/2; // amortiguar si Newton se pasa de -100%
+      if(!isFinite(next)) break;
+      if(Math.abs(next-rate) < 1e-8){ rate = next; break; }
+      rate = next;
+    }
+    const totalAbs = sorted.reduce((s,cf)=>s+Math.abs(cf.amount),0);
+    if(!isFinite(rate) || Math.abs(npv(rate)) > Math.max(1, totalAbs*0.0001)) return null; // no convergió
+    return rate;
+  }
+  function portfolioXIRR(){
+    const events = contributionEvents(false);
+    if(!events.length) return null;
+    const cashflows = events.map(e=>({ date: e.fecha, amount: -e.delta }));
+    cashflows.push({ date: todayISO(), amount: grandTotals().val });
+    return xirr(cashflows);
+  }
+  function renderXIRR(){
+    const elV = document.getElementById('statXirr');
+    const elSub = document.getElementById('statXirrSub');
+    if(!elV) return;
+    const rate = portfolioXIRR();
+    if(rate === null){
+      elV.textContent = '—';
+      elV.className = 'stat-value';
+      if(elSub) elSub.textContent = 'histórico insuficiente para calcularla';
+      return;
+    }
+    const pct = rate*100;
+    elV.textContent = (pct>=0?'+':'') + pct.toLocaleString('es-ES', { maximumFractionDigits:1, minimumFractionDigits:1 }) + '%';
+    elV.className = 'stat-value ' + (pct>=0?'pos':'neg');
+    if(elSub) elSub.textContent = 'anualizada · según fecha real de cada aportación';
   }
 
   /* ---------- Informe diario de inversión (sin inmuebles) ---------- */
@@ -1865,6 +2110,20 @@
   }
   function scheduleSave(){ clearTimeout(saveTimer); saveTimer = setTimeout(persist, 600); }
 
+  let targetAllocSaveTimer = null;
+  function scheduleSaveTargetAlloc(){
+    clearTimeout(targetAllocSaveTimer);
+    targetAllocSaveTimer = setTimeout(()=>{ supabaseSetSetting('target_allocation', state.targetAlloc).catch(()=>{}); }, 600);
+  }
+  function fillTargetAllocInputs(){
+    const ta = state.targetAlloc || {};
+    const map = { liquido:'targetLiquido', jubilacion:'targetJubilacion', plazo:'targetPlazo' };
+    Object.keys(map).forEach(k=>{
+      const el = document.getElementById(map[k]);
+      if(el) el.value = (ta[k]===null || ta[k]===undefined) ? '' : ta[k];
+    });
+  }
+
   async function loadState(){
     let loaded = false;
     try{
@@ -1881,8 +2140,10 @@
     }
     try{ state.inmuebles = await supabaseGetProperties(); }catch(e){}
     try{ state.pasivos = await supabaseGetLiabilities(); }catch(e){}
+    try{ const t = await supabaseGetSetting('target_allocation'); if(t) state.targetAlloc = Object.assign({liquido:null,jubilacion:null,plazo:null}, t); }catch(e){}
     await loadIndexaHistory();
     document.getElementById('fxRate').value = state.fx;
+    fillTargetAllocInputs();
     buildCards();
     buildPropertyCards();
     renderPasivos();
@@ -1899,8 +2160,10 @@
       state = deserializeRows(rows);
       state.inmuebles = await supabaseGetProperties();
       state.pasivos = await supabaseGetLiabilities();
+      try{ const t = await supabaseGetSetting('target_allocation'); if(t) state.targetAlloc = Object.assign({liquido:null,jubilacion:null,plazo:null}, t); }catch(e){}
       await loadIndexaHistory();
       document.getElementById('fxRate').value = state.fx;
+      fillTargetAllocInputs();
       buildCards(); buildPropertyCards(); renderPasivos(); renderPropertySummary(); renderSummary();
       loadSnapshots().then(refreshEvolution);
       setSyncStatus('Datos actualizados desde Supabase', 'ok');
@@ -1917,8 +2180,12 @@
       // abierto), así que aquí solo recargamos el estado en vez de volver a construirlo a mano.
       const rows = await supabaseGet();
       state = deserializeRows(rows);
+      state.inmuebles = await supabaseGetProperties();
+      state.pasivos = await supabaseGetLiabilities();
+      try{ const t = await supabaseGetSetting('target_allocation'); if(t) state.targetAlloc = Object.assign({liquido:null,jubilacion:null,plazo:null}, t); }catch(e){}
       await loadIndexaHistory();
       document.getElementById('fxRate').value = state.fx;
+      fillTargetAllocInputs();
       buildCards(); renderSummary();
       loadSnapshots().then(refreshEvolution);
       try{ localStorage.setItem('portfolio-data', JSON.stringify(state)); }catch(e){}
@@ -2008,11 +2275,19 @@
     state.efectivo.push(cashRow);
   }
 
+  const TARGET_ALLOC_FIELDS = { targetLiquido:'liquido', targetJubilacion:'jubilacion', targetPlazo:'plazo' };
   document.addEventListener('input', (e)=>{
     if(e.target.id === 'fxRate'){
       state.fx = parseFloat(e.target.value) || 0;
       CATS.forEach(c=>refreshEurCells(c.key));
       renderSummary(); scheduleSave();
+      return;
+    }
+    if(TARGET_ALLOC_FIELDS[e.target.id]){
+      const key = TARGET_ALLOC_FIELDS[e.target.id];
+      const raw = e.target.value.trim();
+      state.targetAlloc[key] = raw === '' ? null : Math.max(0, Math.min(100, parseFloat(raw)||0));
+      renderSummary(); scheduleSaveTargetAlloc();
       return;
     }
     if(e.target.matches('.cell')){

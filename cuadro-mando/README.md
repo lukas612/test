@@ -66,6 +66,11 @@ que no venga autenticada como la cuenta autorizada.
 - **`app_files`**: ya no se usa para servir nada (ver sección de hosting).
   RLS activado sin ninguna política — completamente cerrada, ni lectura ni
   escritura desde el cliente.
+- **Tabla de ajustes**: `app_settings` (`key` PK, `value` jsonb,
+  `updated_at`). Misma política RLS. Genérica a propósito — de momento solo
+  guarda `target_allocation` (objetivo % de Líquido/Jubilación/A plazo,
+  ver más abajo), pero sirve para cualquier ajuste futuro sin migrar nada.
+  Se escribe con `Prefer: resolution=merge-duplicates` (upsert por `key`).
 - El dashboard sincroniza en vivo contra `portfolio_holdings` vía `fetch()`
   directo a la REST API de PostgREST, con lógica en `serializeRows()` /
   `deserializeRows()` / `supabaseGet()` / `supabasePost()` dentro del
@@ -199,6 +204,34 @@ GitHub Pages, ya configurado: **https://lukas612.github.io/test/**
 - **Alertas de vencimiento**: si algún proyecto de Crowdfunding tiene un
   Vencimiento (mm/aaaa) a menos de 30 días, o ya pasado y sin marcar como
   Vendido, aparece un aviso en la parte superior del Panel.
+- **TIR anualizada (XIRR)**: nueva tarjeta en "Rendimiento de la inversión"
+  con el retorno real anualizado — a diferencia del % de plusvalía (que es
+  solo valor/coste, sin tener en cuenta cuándo entró cada euro), esto sí
+  usa la fecha exacta de cada aportación (`contributionEvents(false)`, el
+  mismo histórico ya reconstruido para "Aportado") más el valor actual como
+  si se liquidase hoy, y resuelve la tasa por Newton-Raphson (`xirr()`). Si
+  todo el histórico cabe en un solo día, o Newton no converge, muestra "—"
+  en vez de un número inventado.
+- **Exposición por divisa**: nuevo espectro en el Panel, "Exposición por
+  divisa — de la inversión", con cuánto del valor de la inversión está en
+  EUR vs. USD (`currencyTotals()`, por la moneda nativa de cada fila, no
+  por dónde vive el bróker). Deja fuera los inmuebles a propósito — siempre
+  son EUR aquí, y solo diluirían el %.
+- **Resumen fiscal por año** (pestaña Informe): agrupa las plusvalías
+  realizadas (filas "Vendido") por año de `fechaVenta` y estima el IRPF con
+  los tramos agregados de la base del ahorro españoles (19/21/23/27/28%).
+  Es una aproximación: solo mete la ganancia patrimonial de este dashboard,
+  sin dividendos, intereses ni otras rentas — lo dice el propio aviso en
+  la pestaña.
+- **Objetivo de asignación y aviso de desviación**: en Movimientos, un
+  panel nuevo para fijar el % objetivo de Líquido/Jubilación/A plazo (sobre
+  la inversión, igual base que "Patrimonio de inversión" — no coincide con
+  el % del "Espectro de liquidez", que sí incluye inmuebles). Guardado en
+  una tabla nueva `app_settings` (key/value, mismo patrón de RLS que el
+  resto). Cuando hay objetivo fijado, el "Espectro de liquidez" del Panel
+  muestra la desviación en puntos porcentuales, y si supera 5pp
+  (`ALLOC_ALERT_THRESHOLD`) aparece también en la barra de alertas junto a
+  los vencimientos de Crowdfunding.
 - **Pestaña "Informe"**: informe diario centrado solo en inversión — los
   inmuebles quedan fuera a propósito. Arriba, tres cifras: valor de
   inversión actual, aportado histórico y rentabilidad de mercado histórica
@@ -225,6 +258,17 @@ GitHub Pages, ya configurado: **https://lukas612.github.io/test/**
   "en inversión" para que quede claro qué mide — un inmueble no tiene un
   "% de rentabilidad" con sentido cuando su coste es 0, así que no se
   intenta blendearlo en una sola cifra.
+- **Fix: "Actualizar Indexa + IB" vaciaba inmuebles y pasivos en memoria**.
+  Ese botón hacía `state = deserializeRows(rows)` (que arranca desde
+  `defaultState()`, con `inmuebles`/`pasivos` vacíos) y nunca los volvía a
+  cargar — a diferencia de "Sincronizar ahora", que sí lo hacía. No se veía
+  en el DOM porque ese botón tampoco repintaba las tarjetas de inmuebles ni
+  pasivos, pero `renderSummary()` sí usaba el `state` ya vaciado, así que el
+  hero mostraba "Patrimonio inmobiliario" y "Pasivos" en 0 € hasta recargar
+  la página entera. Encontrado al cablear la carga del objetivo de
+  asignación (mismo problema le habría pasado). Arreglado recargando
+  inmuebles/pasivos/ajustes en los dos botones de sincronización, no solo
+  en la carga inicial.
 - **Sincronización automática con Indexa Capital e Interactive Brokers**,
   diaria + botón manual "Actualizar Indexa + IB" — ver secciones propias más
   abajo.
@@ -396,15 +440,17 @@ pasivos que no existían cuando se guardó cada punto antiguo.
 Del estudio "Qué le falta al panel", esto es lo que NO se ha construido
 todavía, con el motivo:
 
-- **XIRR real** (rentabilidad anualizada con fechas exactas): se implementó
-  el paso intermedio más barato que proponía el estudio — separar aportado
-  de rentabilidad de mercado en el gráfico — pero no el solver iterativo de
-  XIRR en sí. Es el siguiente paso natural si esto se queda corto.
 - **Aviso de límite de aportación a planes de pensiones**: las filas de
   Pensiones guardan el saldo total acumulado del plan, no un histórico de
   aportaciones por año — no hay dato suficiente para calcular cuánto se ha
   aportado *este año natural* sin añadir un campo o tabla nueva para
   registrarlo. Se dejó fuera hasta decidir cómo quieres llevar ese registro.
+- **Comparación con un benchmark** (MSCI World/S&P500 con las mismas
+  aportaciones en las mismas fechas): necesita una fuente de precios
+  históricos externa (Yahoo Finance/stooq no tienen API oficial estable, y
+  habría que decidir si se consulta al cargar la página o se cachea vía la
+  Edge Function) — se dejó pendiente de decidir el enfoque contigo antes de
+  implementarlo.
 
 ## Seguridad — pendiente de tu parte
 
