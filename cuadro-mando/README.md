@@ -335,6 +335,15 @@ reconstruye la fecha real de cada aportación a partir de los saltos en
 Crowdfunding, inmuebles, y las posiciones de IB) siguen usando su propia
 fecha de alta, que sí es la fecha real porque la escribes tú a mano.
 
+`cash_amount` (cuánto de cada cuenta está en efectivo sin invertir, que la
+API de Indexa ya devolvía junto a `total_amount` pero antes se descartaba)
+ahora también se guarda y se lee. En Movimientos, bajo el Concepto/Plan de
+cada fila de Indexa o Pensiones-vía-Indexa que tiene histórico, aparece
+"de los cuales X € en efectivo" con el dato del día más reciente
+(`latestIndexaCash()`) — solo informativo, no cambia ningún total ni resta
+de "Invertido"/"Valor". Los planes de Bankinter metidos a mano (sin número
+de cuenta entre paréntesis) no lo muestran porque no hay ese dato para ellos.
+
 **Interactive Brokers no tiene esto todavía**: la Flex Query actual
 ("panel") solo pide `EquitySummaryByReportDateInBase` y `OpenPosition` con
 periodo "Último día hábil" — trae el NAV de los dos últimos días, nada de

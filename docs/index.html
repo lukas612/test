@@ -179,6 +179,7 @@
   select.cell{ font-family:'IBM Plex Mono', monospace; font-size: 12px; }
   input.cell:focus, select.cell:focus, input.ledgercell:focus{ background: var(--surface-2); }
   input.num{ font-family:'IBM Plex Mono', monospace; text-align:right; }
+  .cash-hint{ font-family:'IBM Plex Mono', monospace; font-size: 10.5px; color: var(--ink-faint); padding: 0 4px; margin-top:-2px; white-space:nowrap; }
   input.date{ font-family:'IBM Plex Mono', monospace; color: var(--ink-dim); }
   td.num{ text-align:right; width: 105px; }
   td.veh, td.cur{ width: 110px; }
@@ -1204,8 +1205,14 @@
       const tr = document.createElement('tr');
       let cells = '<td class="veh"><select class="cell" data-cat="'+catKey+'" data-idx="'+idx+'" data-field="veh">'+vehOptions(row.veh)+'</select></td>';
       cells += '<td class="fecha"><input class="cell date" type="date" data-cat="'+catKey+'" data-idx="'+idx+'" data-field="fecha" value="'+(row.fecha||'')+'"></td>';
-      cat.cols.forEach(([field, label])=>{
-        cells += '<td><input class="cell" data-cat="'+catKey+'" data-idx="'+idx+'" data-field="'+field+'" value="'+escapeHtml(row[field]||'')+'" placeholder="'+label+'"></td>';
+      cat.cols.forEach(([field, label], colIdx)=>{
+        let hint = '';
+        if(colIdx === 0 && (catKey === 'indexa' || catKey === 'pensiones')){
+          const acc = indexaAccountTag(row[field]);
+          const cash = acc ? latestIndexaCash(acc) : null;
+          if(cash !== null) hint = '<div class="cash-hint">de los cuales '+fmtEUR(cash)+' en efectivo</div>';
+        }
+        cells += '<td><input class="cell" data-cat="'+catKey+'" data-idx="'+idx+'" data-field="'+field+'" value="'+escapeHtml(row[field]||'')+'" placeholder="'+label+'">'+hint+'</td>';
       });
       cells += '<td class="cur"><select class="cell" data-cat="'+catKey+'" data-idx="'+idx+'" data-field="cur">'+curOptions(row.cur)+'</select></td>';
       cells += '<td class="num"><input class="cell num" data-cat="'+catKey+'" data-idx="'+idx+'" data-field="inv" type="number" step="0.01" value="'+(row.inv||'')+'" placeholder="0"></td>';
@@ -1685,7 +1692,7 @@
       let offset = 0;
       const rows = [];
       while(true){
-        const res = await fetch(supabaseConfig.url + '/rest/v1/' + INDEXA_HISTORY_TABLE + '?select=account_number,fecha,net_amount,total_amount&order=fecha.asc', {
+        const res = await fetch(supabaseConfig.url + '/rest/v1/' + INDEXA_HISTORY_TABLE + '?select=account_number,fecha,net_amount,total_amount,cash_amount&order=fecha.asc', {
           headers: Object.assign({}, authHeaders(), { Range: offset + '-' + (offset + PAGE - 1) })
         });
         if(!res.ok) break;
@@ -1697,7 +1704,7 @@
       const byAccount = {};
       rows.forEach(r=>{
         if(!byAccount[r.account_number]) byAccount[r.account_number] = [];
-        byAccount[r.account_number].push({ fecha: r.fecha, net_amount: Number(r.net_amount)||0, total_amount: Number(r.total_amount)||0 });
+        byAccount[r.account_number].push({ fecha: r.fecha, net_amount: Number(r.net_amount)||0, total_amount: Number(r.total_amount)||0, cash_amount: Number(r.cash_amount)||0 });
       });
       indexaHistoryByAccount = byAccount;
     }catch(e){}
@@ -1712,6 +1719,11 @@
   function indexaAccountTag(campo1){
     const m = String(campo1||'').match(/\(([A-Za-z0-9]+)\)\s*$/);
     return m ? m[1] : null;
+  }
+  function latestIndexaCash(accountTag){
+    const hist = indexaHistoryByAccount[accountTag];
+    if(!hist || !hist.length) return null;
+    return hist[hist.length-1].cash_amount;
   }
   function contributionEvents(includeProperties){
     if(includeProperties === undefined) includeProperties = true;
