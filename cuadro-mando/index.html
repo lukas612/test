@@ -225,6 +225,16 @@
   .evo-line{ fill:none; stroke: var(--gold); stroke-width:2; }
   .evo-line-2{ fill:none; stroke: var(--ink-faint); stroke-width:1.5; stroke-dasharray:4 3; }
   .evo-labels{ display:flex; justify-content:space-between; font-family:'IBM Plex Mono', monospace; font-size:11.5px; color: var(--ink-faint); margin-top:8px; }
+  .evo-hover-guide{ stroke: var(--ink-faint); stroke-width:1; stroke-dasharray:2 2; opacity:0; pointer-events:none; }
+  .evo-hover-guide.active{ opacity:0.6; }
+  .evo-hover-dot{ opacity:0; stroke: var(--surface); stroke-width:1.5; pointer-events:none; }
+  .evo-hover-dot.active{ opacity:1; }
+  .evo-tooltip{ position:absolute; top:6px; left:0; pointer-events:none; background: var(--surface-2); border:1px solid var(--line); border-radius:6px; padding:8px 10px; font-family:'IBM Plex Mono', monospace; font-size:11.5px; color:var(--ink); box-shadow: 0 4px 14px rgba(0,0,0,0.3); opacity:0; transition: opacity 100ms ease; z-index:5; white-space:nowrap; }
+  .evo-tooltip.active{ opacity:1; }
+  .evo-tooltip .tt-date{ color: var(--ink-faint); font-size:10px; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:5px; }
+  .evo-tooltip .tt-row{ display:flex; align-items:center; gap:6px; }
+  .evo-tooltip .tt-row + .tt-row{ margin-top:3px; }
+  .evo-tooltip .tt-dot{ width:7px; height:7px; border-radius:50%; flex:none; }
   .chart-empty{ font-family:'IBM Plex Mono', monospace; font-size:12.5px; color: var(--ink-faint); padding:20px 0; text-align:center; }
   .informe-actions{ display:flex; justify-content:flex-end; margin-bottom:14px; }
   td.day-delta{ text-align:right; width:120px; font-family:'IBM Plex Mono', monospace; font-size:12.5px; }
@@ -1963,6 +1973,74 @@
     return { dates, totalSeries, netSeries };
   }
 
+  function evoTooltipDate(iso){
+    if(!iso) return '';
+    return new Date(iso+'T00:00:00Z').toLocaleDateString('es-ES', { day:'2-digit', month:'short', year:'numeric' });
+  }
+  // Un solo listener por gráfico (reasignado en cada render vía onmousemove/onmouseleave, no
+  // addEventListener) — evita acumular handlers cada vez que se cambia de modo/periodo, ya que
+  // container.innerHTML se reconstruye entero en cada renderEvolutionChart().
+  function setupEvoHover(container, cfg){
+    if(!cfg || cfg.n < 2){ container.onmousemove = null; container.onmouseleave = null; container.ontouchmove = null; container.ontouchend = null; return; }
+    const svg = container.querySelector('svg.evo-svg');
+    if(!svg) return;
+    const ns = 'http://www.w3.org/2000/svg';
+    const guide = document.createElementNS(ns, 'line');
+    guide.setAttribute('class', 'evo-hover-guide');
+    guide.setAttribute('y1', 0); guide.setAttribute('y2', cfg.H);
+    svg.appendChild(guide);
+    const nSeries = (cfg.hoverData[0] && cfg.hoverData[0].items) ? cfg.hoverData[0].items.length : 0;
+    const dotEls = [];
+    for(let k=0;k<nSeries;k++){
+      const c = document.createElementNS(ns, 'circle');
+      c.setAttribute('class', 'evo-hover-dot');
+      c.setAttribute('r', 3.5);
+      svg.appendChild(c);
+      dotEls.push(c);
+    }
+    let tooltip = container.querySelector('.evo-tooltip');
+    if(!tooltip){ tooltip = document.createElement('div'); tooltip.className = 'evo-tooltip'; container.appendChild(tooltip); }
+
+    const step = (cfg.W - cfg.PAD*2) / (cfg.n - 1);
+    function update(clientX){
+      const rect = svg.getBoundingClientRect();
+      if(!rect.width) return;
+      const dataX = ((clientX - rect.left) / rect.width) * cfg.W;
+      let i = Math.round((dataX - cfg.PAD) / step);
+      i = Math.max(0, Math.min(cfg.n - 1, i));
+      const d = cfg.hoverData[i];
+      if(!d) return;
+      const gx = (cfg.PAD + i*step).toFixed(1);
+      guide.setAttribute('x1', gx); guide.setAttribute('x2', gx);
+      guide.classList.add('active');
+      d.items.forEach((it, k)=>{
+        const dot = dotEls[k];
+        if(!dot) return;
+        if(it.y === undefined || it.y === null){ dot.classList.remove('active'); return; }
+        dot.setAttribute('cx', gx);
+        dot.setAttribute('cy', it.y.toFixed(1));
+        dot.setAttribute('fill', it.hex);
+        dot.classList.add('active');
+      });
+      tooltip.innerHTML = '<div class="tt-date">'+evoTooltipDate(d.date)+'</div>' +
+        d.items.map(it=>'<div class="tt-row"><span class="tt-dot" style="background:'+it.hex+'"></span>'+escapeHtml(it.label)+': <b>'+fmtEUR(it.value)+'</b></div>').join('');
+      tooltip.classList.add('active');
+      const contRect = container.getBoundingClientRect();
+      const cursorLeft = ((clientX - rect.left) / rect.width) * contRect.width;
+      let left = cursorLeft + 14;
+      if(left + tooltip.offsetWidth + 8 > contRect.width) left = cursorLeft - tooltip.offsetWidth - 14;
+      tooltip.style.left = Math.max(4, left) + 'px';
+    }
+    container.onmousemove = (e)=> update(e.clientX);
+    container.onmouseleave = ()=>{
+      guide.classList.remove('active');
+      dotEls.forEach(d=>d.classList.remove('active'));
+      tooltip.classList.remove('active');
+    };
+    container.ontouchmove = (e)=>{ if(e.touches[0]) update(e.touches[0].clientX); };
+    container.ontouchend = container.onmouseleave;
+  }
+
   function renderEvolutionChart(allSnapshots){
     const container = document.getElementById('evolutionChart');
     const statsEl = document.getElementById('evoPeriodStats');
@@ -1978,6 +2056,7 @@
         if(statsEl) statsEl.innerHTML = '';
         if(legendEl) legendEl.innerHTML = '';
         if(noteEl) noteEl.textContent = '';
+        setupEvoHover(container, null);
         return;
       }
       let { dates, totalSeries, netSeries } = agg;
@@ -2015,6 +2094,10 @@
       if(legendEl) legendEl.innerHTML =
         '<span><span class="dot" style="background:var(--gold)"></span>Valor Indexa + Pensiones</span>' +
         '<span><span class="swatch-line"></span>Aportado acumulado</span>';
+      setupEvoHover(container, { n: nn, W, H, PAD, hoverData: dates.map((d,i)=>({ date: d, items: [
+        { label:'Valor Indexa + Pensiones', value: totalSeries[i], hex:'#C9A227', y: points[i][1] },
+        { label:'Aportado acumulado', value: netSeries[i], hex:'#626B76', y: points2[i][1] }
+      ]})) });
       const deltaTotal = totalSeries[nn-1] - totalSeries[0];
       const deltaAportado = netSeries[nn-1] - netSeries[0];
       const deltaMercado = deltaTotal - deltaAportado;
@@ -2032,6 +2115,7 @@
       if(statsEl) statsEl.innerHTML = '';
       if(legendEl) legendEl.innerHTML = '';
       if(noteEl) noteEl.textContent = '';
+      setupEvoHover(container, null);
       return;
     }
     const { list: snapshots, truncated } = filterSnapshotsByPeriod(allSnapshots, evoPeriod);
@@ -2064,6 +2148,10 @@
       if(legendEl) legendEl.innerHTML =
         '<span><span class="dot" style="background:var(--gold)"></span>Valor total</span>' +
         '<span><span class="swatch-line"></span>Aportado acumulado</span>';
+      setupEvoHover(container, { n, W, H, PAD, hoverData: dates.map((d,i)=>({ date: d, items: [
+        { label:'Valor total', value: values[i], hex:'#C9A227', y: points[i][1] },
+        { label:'Aportado acumulado', value: aportado[i], hex:'#626B76', y: points2[i][1] }
+      ]})) });
 
       const deltaTotal = values[n-1] - values[0];
       const deltaAportado = aportado[n-1] - aportado[0];
@@ -2102,6 +2190,11 @@
         }).join('');
       }
       if(statsEl) statsEl.innerHTML = '';
+      setupEvoHover(container, { n, W, H, PAD, hoverData: snapshots.map((s,i)=>{
+        const items = keys.map(k=>({ label:k.label, value: rows[i][k.key]||0, hex:k.hex })).filter(it=>Math.abs(it.value) > 0.5);
+        items.unshift({ label:'Total', value: cumRows[i][cumRows[i].length-1] || 0, hex:'#ECE8DF' });
+        return { date: s.fecha, items };
+      }) });
     }
   }
 

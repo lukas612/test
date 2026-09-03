@@ -186,6 +186,21 @@ GitHub Pages, ya configurado: **https://lukas612.github.io/test/**
   histórico largo — por eso el gráfico principal ("Total") sigue acotado a
   lo que hay en `portfolio_snapshots`, y esta pestaña es la manera de ver
   más atrás para la parte que sí lo permite.
+- **Tooltip al pasar el ratón por el gráfico de evolución**: en los tres
+  modos de línea/área (Total, Indexa histórico completo, Por
+  categoría/titular), mover el ratón sobre el gráfico saca una guía
+  vertical, un punto en cada línea (en los modos de línea) y una tarjeta
+  con la fecha exacta y el valor de cada serie ese día — en el modo
+  apilado, el valor de cada categoría/titular ese día más el total, no el
+  acumulado del área. Los gráficos son SVG dibujado a mano (sin librería),
+  así que el tooltip también: `setupEvoHover()` convierte la posición del
+  ratón (en píxeles reales) a un índice del array de fechas invirtiendo el
+  mismo cálculo de `xAt()` que ya se usaba para dibujar las líneas, y
+  reutiliza el `<svg>` — no hay overlay aparte. Un solo listener por
+  gráfico, reasignado con `onmousemove`/`onmouseleave` en cada render, para
+  no acumular handlers al cambiar de modo o periodo (el `innerHTML` del
+  contenedor se reconstruye entero en cada `renderEvolutionChart()`).
+  Funciona también con touch (`touchmove`/`touchend`).
 - **Rentabilidad diaria**: debajo del Patrimonio neto, "Desde el [fecha]:
   ±X € (±Y%)" compara el snapshot más reciente con el anterior.
 - **Qué se movió, no solo el total**: debajo de esa línea, una fila de
