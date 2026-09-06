@@ -167,7 +167,16 @@ GitHub Pages, ya configurado: **https://lukas612.github.io/test/**
   mano hace tiempo sin fecha (algunas de las pensiones de Bankinter, algún
   proyecto de Crowdfunding) ya no desaparecen del cómputo por no tener
   fecha — antes se descartaban en silencio y el aportado salía por debajo
-  del real; ahora, a falta de una fecha mejor, cuentan desde hoy.
+  del real. **Fix posterior**: la primera versión de este arreglo las
+  contaba "desde hoy" (`todayISO()`), que se recalcula en cada carga — así
+  que el aportado del día más reciente saltaba hacia arriba cada vez que
+  pasaba un día (la captura que lo destapó: "Aportado" subía +21.500€ de
+  golpe en la fila de hoy, sin que hubiera habido ninguna aportación
+  grande), y el valor ya mostrado para un día concreto cambiaba
+  retroactivamente al día siguiente. Ahora usan un ancla fija
+  (`UNKNOWN_CONTRIBUTION_DATE = '2000-01-01'`, muy anterior a cualquier
+  fila real) en vez de "hoy" — el aportado de estas filas es constante
+  desde el primer día que haya en el histórico, no se mueve nunca.
 - **Selector de periodo y desglose en el gráfico de evolución**: botones
   7D/1M/YTD/1A/Todo filtran el histórico mostrado (si no hay suficientes
   días para el periodo elegido, se avisa y se enseña todo el histórico

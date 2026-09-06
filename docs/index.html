@@ -1735,6 +1735,7 @@
     if(!hist || !hist.length) return null;
     return hist[hist.length-1].cash_amount;
   }
+  const UNKNOWN_CONTRIBUTION_DATE = '2000-01-01'; // ancla fija, anterior a cualquier fila real
   function contributionEvents(includeProperties){
     if(includeProperties === undefined) includeProperties = true;
     const events = [];
@@ -1748,13 +1749,16 @@
           if(acc && indexaHistoryByAccount[acc]){ coveredIndexaAccounts.add(acc); return; }
         }
         // Filas antiguas sin fecha (metidas a mano antes de que el campo fuera obligatorio) no
-        // deben desaparecer del aportado — sin mejor dato, cuentan desde hoy en vez de nunca.
-        events.push({ fecha: r.fecha || todayISO(), delta: toEUR(r.inv, r.cur) });
+        // deben desaparecer del aportado — sin mejor dato, se cuentan desde un ancla fija muy
+        // anterior a cualquier histórico real (NUNCA "hoy": todayISO() se recalcula en cada
+        // carga, así que el aportado de ese día saltaría hacia adelante cada vez que pasa un
+        // día, y el valor ya mostrado para un día pasado cambiaría retroactivamente al siguiente).
+        events.push({ fecha: r.fecha || UNKNOWN_CONTRIBUTION_DATE, delta: toEUR(r.inv, r.cur) });
       });
     });
     if(includeProperties){
       state.inmuebles.forEach(p=>{
-        events.push({ fecha: p.fechaCompra || todayISO(), delta: Number(p.precioCompra)||0 });
+        events.push({ fecha: p.fechaCompra || UNKNOWN_CONTRIBUTION_DATE, delta: Number(p.precioCompra)||0 });
       });
     }
     Object.keys(indexaHistoryByAccount).forEach(acc=>{
