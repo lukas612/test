@@ -71,6 +71,9 @@ que no venga autenticada como la cuenta autorizada.
   guarda `target_allocation` (objetivo % de Líquido/Jubilación/A plazo,
   ver más abajo), pero sirve para cualquier ajuste futuro sin migrar nada.
   Se escribe con `Prefer: resolution=merge-duplicates` (upsert por `key`).
+- **Tabla de gastos personales**: `expenses` (`fecha, cuenta, titular,
+  categoria, concepto, importe, moneda, nota`). Misma política RLS. Ver
+  sección "Gastos personales" más abajo.
 - El dashboard sincroniza en vivo contra `portfolio_holdings` vía `fetch()`
   directo a la REST API de PostgREST, con lógica en `serializeRows()` /
   `deserializeRows()` / `supabaseGet()` / `supabasePost()` dentro del
@@ -467,6 +470,52 @@ igual que antes. El "Patrimonio neto" del Panel se calcula siempre en el
 cliente, restando los pasivos actuales al bruto del momento — así el
 histórico de la evolución del patrimonio no cambia de significado con
 pasivos que no existían cuando se guardó cada punto antiguo.
+
+## Gastos personales
+
+Pestaña nueva, completamente separada de la inversión (no toca
+`portfolio_holdings` ni ningún total del Panel/Informe) — vive en su propia
+tabla `expenses` (`fecha, cuenta, titular, categoria, concepto, importe,
+moneda, nota`), misma política RLS que el resto.
+
+- **Cuentas**: `bankinter_comun` (con Adriana), `bankinter_personal`,
+  `caixa_personal` y `amex` (`GASTO_CUENTAS` en el código). Caixa y Amex
+  están ya en la lista de cuentas y en el formulario de alta manual, pero
+  sin movimientos importados todavía — en cuanto subas esos extractos se
+  procesan igual que Bankinter.
+- **Alta de movimientos**: de momento es manual (importación hecha a mano
+  desde los Excel de Bankinter que subiste, o fila por fila desde el
+  formulario "Añadir gasto") — no hay un importador de XLSX en el propio
+  navegador todavía. Si quieres subir los extractos tú mismo desde la app en
+  vez de pasármelos, es la siguiente mejora natural.
+- **Categorías** (`GASTO_CATEGORIAS`): alimentación, restaurantes y ocio,
+  compras, educación, salud, suministros, comunidad/inmueble, transporte,
+  seguros, suscripciones, hogar, servicio doméstico, bizum, efectivo,
+  comisiones bancarias, pago de tarjeta, transferencia interna, inversión,
+  ingreso, y "otros" para lo que no se reconoce. Se puede recategorizar
+  cualquier fila desde el desplegable de su propia columna en la tabla —
+  guarda al momento (`PATCH` a Supabase), no hace falta ningún botón de
+  guardar.
+- **Qué NO cuenta como "gasto"** (`GASTO_EXCLUDED_FROM_TOTAL`):
+  transferencia interna (dinero que se mueve entre tus propias cuentas),
+  pago de tarjeta (ya se contó cuando se gastó en el extracto de la propia
+  tarjeta — Amex o la Visa de Bankinter) e inversión (compra de
+  acciones/crowdfunding, eso ya se trackea en Movimientos). Quedan
+  guardados y visibles en la tabla, pero no suman en "Gasto del mes" — se
+  ven aparte en "No computado".
+- **Selector de mes**: el bloque "Gasto del mes" compara siempre contra el
+  mes natural anterior (aunque no tenga movimientos cargados, en cuyo caso
+  no muestra comparación). Categorías y cuentas se desglosan con el mismo
+  componente de espectro que ya se usaba en el Panel.
+- **Clasificación automática del import de Bankinter**: se hizo con reglas
+  por palabra clave sobre la columna "Descripción" del extracto (ver
+  `extract_expenses.py` en el histórico de la sesión, no forma parte del
+  repo) — acertó la mayoría, pero quedaron ~80 filas como "otros" (comercios
+  que no reconocí) y dos suposiciones que deberías confirmar o corregir
+  desde la tabla: **"TRANS /MARYORI ADRIANA PITA AR"** se etiquetó como
+  "Servicio doméstico" (parece una nómina recurrente a la misma persona,
+  pero es una suposición mía) y **"MIRASOTO"** (21 apariciones, importes
+  variados) se dejó en "otros" porque no tengo forma de saber qué es.
 
 ## Qué se quedó fuera de esta pasada (a propósito)
 

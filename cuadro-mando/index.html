@@ -189,8 +189,8 @@
   td.gain.pos{ color: var(--positive); }
   td.gain.neg{ color: var(--negative); }
   td.del{ width: 28px; text-align:center; }
-  .del-btn, .del-btn-prop, .del-btn-pasivo{ background:none; border:none; color: var(--ink-faint); cursor:pointer; font-size:15px; line-height:1; padding: 4px 6px; border-radius:4px; }
-  .del-btn:hover, .del-btn-prop:hover, .del-btn-pasivo:hover{ color: var(--negative); background: rgba(193,88,79,0.1); }
+  .del-btn, .del-btn-prop, .del-btn-pasivo, .del-btn-gasto{ background:none; border:none; color: var(--ink-faint); cursor:pointer; font-size:15px; line-height:1; padding: 4px 6px; border-radius:4px; }
+  .del-btn:hover, .del-btn-prop:hover, .del-btn-pasivo:hover, .del-btn-gasto:hover{ color: var(--negative); background: rgba(193,88,79,0.1); }
   .add-row, .add-row-prop, .add-row-pasivo{ margin-top: 10px; background: none; border: 1px dashed var(--line); color: var(--ink-dim); font-family:'IBM Plex Mono', monospace; font-size: 12px; padding: 7px 12px; border-radius:6px; cursor:pointer; width:100%; }
   .add-row:hover, .add-row-prop:hover, .add-row-pasivo:hover{ border-color: var(--gold-dim); color: var(--gold); }
 
@@ -207,7 +207,7 @@
     .donut-hole{ top:19px; left:19px; width:112px; height:112px; }
     #sheetsUrl{ min-width: 100%; }
     td.vendido input[type=checkbox]{ width:20px; height:20px; }
-    .del-btn, .del-btn-prop, .del-btn-pasivo{ padding: 8px 10px; font-size:17px; }
+    .del-btn, .del-btn-prop, .del-btn-pasivo, .del-btn-gasto{ padding: 8px 10px; font-size:17px; }
     .tabs{ flex-wrap: wrap; }
     .tab-btn{ flex: 1 1 auto; text-align:center; }
   }
@@ -254,6 +254,12 @@
   .evo-legend .swatch-line{ display:inline-block; width:14px; height:0; border-top:1.5px dashed var(--ink-faint); margin-right:5px; vertical-align:middle; }
   .evo-note{ font-family:'IBM Plex Mono', monospace; font-size:11px; color:var(--ink-faint); margin-top:8px; }
   .fiscal-caveat{ font-family:'IBM Plex Mono', monospace; font-size:11.5px; color:var(--ink-faint); margin:-6px 0 14px; line-height:1.5; }
+  .gastos-month-bar{ display:flex; align-items:center; gap:14px; margin-bottom:20px; }
+  .gastos-month-bar select{ background: var(--surface-2); border:1px solid var(--line); color: var(--ink); font-family:'IBM Plex Mono', monospace; font-size:13px; padding:7px 10px; border-radius:6px; }
+  .gastos-month-note{ font-family:'IBM Plex Mono', monospace; font-size:11.5px; color: var(--ink-faint); }
+  td.gasto-cat{ min-width:150px; }
+  td.gasto-cat select{ width:100%; background: transparent; border:none; color: var(--ink); font-family:'IBM Plex Mono', monospace; font-size:12px; padding:4px; border-radius:4px; }
+  td.gasto-cat select:focus{ background: var(--surface-2); }
 </style>
 </head>
 <body>
@@ -277,6 +283,7 @@
     <button class="tab-btn" data-view="viewMovimientos">Movimientos</button>
     <button class="tab-btn" data-view="viewInmuebles">Inmuebles</button>
     <button class="tab-btn" data-view="viewInforme">Informe</button>
+    <button class="tab-btn" data-view="viewGastos">Gastos</button>
   </div>
 
   <!-- ================= PANEL (visualización) ================= -->
@@ -557,6 +564,76 @@
 
   </div>
 
+  <!-- ================= GASTOS (personales) ================= -->
+  <div class="view" id="viewGastos">
+
+    <div class="gastos-month-bar">
+      <select id="gastosMonthSelect"></select>
+      <span class="gastos-month-note" id="gastosMonthNote"></span>
+    </div>
+
+    <div class="stat-row">
+      <div class="stat-box highlight">
+        <div class="stat-label">Gasto del mes</div>
+        <div class="stat-value" id="gastosMesTotal">€0</div>
+        <div class="stat-sub" id="gastosMesVsAnterior"></div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Ingresos del mes</div>
+        <div class="stat-value" id="gastosMesIngresos">€0</div>
+        <div class="stat-sub">Bizum recibidos, devoluciones...</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">No computado</div>
+        <div class="stat-value" id="gastosMesNoComputado">€0</div>
+        <div class="stat-sub">Transferencias internas, pago de tarjeta, inversión</div>
+      </div>
+    </div>
+
+    <div class="spectrum-block">
+      <p class="section-label">Por categoría</p>
+      <div class="spectrum" id="specGastosCat"></div>
+      <div class="spectrum-legend" id="specGastosCatLegend"></div>
+    </div>
+
+    <div class="spectrum-block">
+      <p class="section-label">Por cuenta</p>
+      <div class="spectrum" id="specGastosCuenta"></div>
+      <div class="spectrum-legend" id="specGastosCuentaLegend"></div>
+    </div>
+
+    <div class="panel" id="addGastoPanel">
+      <p class="panel-title">Añadir gasto</p>
+      <div class="form-grid">
+        <div class="field"><label>Fecha</label><input id="gfFecha" type="date"></div>
+        <div class="field"><label>Cuenta</label><select id="gfCuenta"></select></div>
+        <div class="field"><label>Titular</label><select id="gfTitular"></select></div>
+        <div class="field"><label>Categoría</label><select id="gfCategoria"></select></div>
+        <div class="field"><label>Concepto</label><input id="gfConcepto" type="text" placeholder="Mercadona, Amazon..."></div>
+        <div class="field"><label>Importe</label><input id="gfImporte" type="number" step="0.01" placeholder="-50"></div>
+      </div>
+      <button class="btn primary" id="gfSubmit">+ Añadir gasto</button>
+    </div>
+
+    <p class="section-label">Movimientos del mes</p>
+    <div class="informe-actions"><button class="btn" id="exportGastosBtn">Exportar CSV</button></div>
+    <div class="table-scroll">
+      <table>
+        <thead><tr>
+          <th>Fecha</th>
+          <th>Cuenta</th>
+          <th>Categoría</th>
+          <th>Concepto</th>
+          <th class="num">Importe</th>
+          <th></th>
+        </tr></thead>
+        <tbody id="gastosTableBody"></tbody>
+      </table>
+    </div>
+    <div class="chart-empty" id="gastosEmpty" style="display:none">Sin movimientos en este mes.</div>
+
+  </div>
+
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
@@ -590,7 +667,7 @@
   }
 
   function defaultState(){
-    const s = { fx: 0.92, inmuebles: [], pasivos: [], targetAlloc: { liquido:null, jubilacion:null, plazo:null } };
+    const s = { fx: 0.92, inmuebles: [], pasivos: [], gastos: [], targetAlloc: { liquido:null, jubilacion:null, plazo:null } };
     CATS.forEach(c=>{ s[c.key] = [blankRow(c)]; });
     s.indexa[0].a = 'Cartera indexada';
     const cf = CATS.find(c=>c.key==='crowdfunding');
@@ -1630,6 +1707,202 @@
     if(!res.ok) throw new Error('HTTP ' + res.status);
     return true;
   }
+
+  /* ---------- Gastos personales ---------- */
+  const EXPENSES_TABLE = 'expenses';
+  const GASTO_CUENTAS = [
+    { key:'bankinter_comun', label:'Bankinter común', hex:'#7FA7C9' },
+    { key:'bankinter_personal', label:'Bankinter personal', hex:'#D98C5F' },
+    { key:'caixa_personal', label:'Caixa personal', hex:'#5FA37A' },
+    { key:'amex', label:'American Express', hex:'#9BA6B4' },
+  ];
+  const GASTO_CATEGORIAS = [
+    { key:'alimentacion', label:'Alimentación', hex:'#5FA37A' },
+    { key:'restaurantes_ocio', label:'Restaurantes y ocio', hex:'#C2617E' },
+    { key:'compras', label:'Compras', hex:'#4A8CA6' },
+    { key:'educacion', label:'Educación', hex:'#8E7FC0' },
+    { key:'salud', label:'Salud', hex:'#C9A227' },
+    { key:'suministros', label:'Suministros', hex:'#B5A889' },
+    { key:'comunidad_inmueble', label:'Comunidad / inmueble', hex:'#8C7A66' },
+    { key:'transporte', label:'Transporte', hex:'#7FA7C9' },
+    { key:'seguros', label:'Seguros', hex:'#D98C5F' },
+    { key:'suscripciones', label:'Suscripciones', hex:'#9BA6B4' },
+    { key:'hogar', label:'Hogar', hex:'#C08A3E' },
+    { key:'servicio_domestico', label:'Servicio doméstico', hex:'#A65D57' },
+    { key:'bizum', label:'Bizum', hex:'#5F9EA0' },
+    { key:'efectivo', label:'Efectivo', hex:'#8A8578' },
+    { key:'comisiones_bancarias', label:'Comisiones bancarias', hex:'#9A9A9A' },
+    { key:'pago_tarjeta', label:'Pago de tarjeta', hex:'#626B76' },
+    { key:'transferencia_interna', label:'Transferencia interna', hex:'#44505C' },
+    { key:'inversion', label:'Inversión (ya está en Movimientos)', hex:'#C9A227' },
+    { key:'ingreso', label:'Ingreso', hex:'#5FA37A' },
+    { key:'otros', label:'Otros / sin clasificar', hex:'#666666' },
+  ];
+  // Dinero que se mueve pero no es gasto real: transferencias entre tus propias cuentas,
+  // el pago mensual de la tarjeta (ya contado cuando se gastó en el extracto de la tarjeta)
+  // y compraventa de acciones (eso ya se trackea en Movimientos).
+  const GASTO_EXCLUDED_FROM_TOTAL = new Set(['transferencia_interna','pago_tarjeta','inversion']);
+  function gastoFromDbRow(r){
+    return { id:r.id, fecha:r.fecha, cuenta:r.cuenta, titular:r.titular, categoria:r.categoria, concepto:r.concepto, importe:Number(r.importe)||0, moneda:r.moneda||'EUR', nota:r.nota||'' };
+  }
+  async function supabaseGetExpenses(){
+    const PAGE = 1000;
+    let offset = 0;
+    const rows = [];
+    while(true){
+      const res = await fetch(supabaseConfig.url + '/rest/v1/' + EXPENSES_TABLE + '?select=*&order=fecha.asc', {
+        headers: Object.assign({}, authHeaders(), { Range: offset + '-' + (offset + PAGE - 1) })
+      });
+      if(!res.ok) throw new Error('HTTP ' + res.status);
+      const page = await res.json();
+      rows.push.apply(rows, page);
+      if(page.length < PAGE) break;
+      offset += PAGE;
+    }
+    return rows.map(gastoFromDbRow);
+  }
+  async function supabaseAddExpense(row){
+    const res = await fetch(supabaseConfig.url + '/rest/v1/' + EXPENSES_TABLE, {
+      method:'POST',
+      headers: Object.assign({}, authHeaders(), { 'Content-Type':'application/json', Prefer:'return=representation' }),
+      body: JSON.stringify({ fecha: row.fecha, cuenta: row.cuenta, titular: row.titular, categoria: row.categoria, concepto: row.concepto, importe: row.importe, moneda: row.moneda||'EUR', nota: row.nota||'' })
+    });
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    return gastoFromDbRow(data[0]);
+  }
+  async function supabaseUpdateExpense(id, patch){
+    const res = await fetch(supabaseConfig.url + '/rest/v1/' + EXPENSES_TABLE + '?id=eq.' + id, {
+      method:'PATCH',
+      headers: Object.assign({}, authHeaders(), { 'Content-Type':'application/json', Prefer:'return=minimal' }),
+      body: JSON.stringify(patch)
+    });
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+  }
+  async function supabaseDeleteExpense(id){
+    const res = await fetch(supabaseConfig.url + '/rest/v1/' + EXPENSES_TABLE + '?id=eq.' + id, { method:'DELETE', headers: authHeaders() });
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+  }
+  function fmtMonthLabel(m){
+    const parts = m.split('-');
+    const d = new Date(Date.UTC(Number(parts[0]), Number(parts[1])-1, 1));
+    const s = d.toLocaleDateString('es-ES', { month:'long', year:'numeric' });
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  }
+  function prevMonthKey(m){
+    const parts = m.split('-').map(Number);
+    const d = new Date(Date.UTC(parts[0], parts[1]-2, 1));
+    return d.getUTCFullYear() + '-' + String(d.getUTCMonth()+1).padStart(2,'0');
+  }
+  let gastosSelectedMonth = null;
+  function gastosMonthsAvailable(){
+    const months = new Set((state.gastos||[]).map(g=>g.fecha.slice(0,7)));
+    months.add(todayISO().slice(0,7));
+    return Array.from(months).sort().reverse();
+  }
+  function fillGastosForm(){
+    const cuentaSel = document.getElementById('gfCuenta');
+    const titularSel = document.getElementById('gfTitular');
+    const catSel = document.getElementById('gfCategoria');
+    if(cuentaSel) cuentaSel.innerHTML = GASTO_CUENTAS.map(c=>'<option value="'+c.key+'">'+c.label+'</option>').join('');
+    if(titularSel) titularSel.innerHTML = VEHS.map(v=>'<option value="'+v.key+'">'+v.label+'</option>').join('');
+    if(catSel) catSel.innerHTML = GASTO_CATEGORIAS.map(c=>'<option value="'+c.key+'">'+c.label+'</option>').join('');
+    const fechaEl = document.getElementById('gfFecha');
+    if(fechaEl) fechaEl.value = todayISO();
+  }
+  function fillGastosMonthSelect(){
+    const sel = document.getElementById('gastosMonthSelect');
+    if(!sel) return;
+    const months = gastosMonthsAvailable();
+    if(!gastosSelectedMonth || months.indexOf(gastosSelectedMonth) === -1) gastosSelectedMonth = months[0];
+    sel.innerHTML = months.map(m=>'<option value="'+m+'"'+(m===gastosSelectedMonth?' selected':'')+'>'+fmtMonthLabel(m)+'</option>').join('');
+  }
+  function gastosForMonth(month){
+    return (state.gastos||[]).filter(g=>g.fecha.slice(0,7) === month);
+  }
+  function renderGastosSpectrum(containerId, legendId, items, totalForPct){
+    const segEl = document.getElementById(containerId), legEl = document.getElementById(legendId);
+    if(!segEl || !legEl) return;
+    segEl.innerHTML = ''; legEl.innerHTML = '';
+    items.forEach(it=>{
+      const pct = totalForPct>0 ? (it.val/totalForPct*100) : 0;
+      const seg = document.createElement('div'); seg.className='seg'; seg.style.background = it.hex;
+      segEl.appendChild(seg);
+      requestAnimationFrame(()=>{ seg.style.width = pct + '%'; });
+      const item = document.createElement('div'); item.className = 'spec-item';
+      item.innerHTML = '<div class="spec-dot" style="background:'+it.hex+'"></div><div><div class="t">'+escapeHtml(it.label)+'</div><div class="d">'+fmtEUR(it.val)+' · '+pct.toFixed(0)+'%</div></div>';
+      legEl.appendChild(item);
+    });
+  }
+  function renderGastos(){
+    fillGastosMonthSelect();
+    const month = gastosSelectedMonth;
+    const rows = gastosForMonth(month).slice().sort((a,b)=> a.fecha < b.fecha ? 1 : (a.fecha > b.fecha ? -1 : 0));
+    const tbody = document.getElementById('gastosTableBody');
+    const emptyEl = document.getElementById('gastosEmpty');
+    if(!tbody) return;
+    if(emptyEl) emptyEl.style.display = rows.length ? 'none' : '';
+
+    let gastoTotal = 0, ingresoTotal = 0, noComputado = 0;
+    rows.forEach(g=>{
+      if(GASTO_EXCLUDED_FROM_TOTAL.has(g.categoria)) noComputado += g.importe;
+      else if(g.importe >= 0) ingresoTotal += g.importe;
+      else gastoTotal += g.importe;
+    });
+    document.getElementById('gastosMesTotal').textContent = fmtEUR(Math.abs(gastoTotal));
+    document.getElementById('gastosMesIngresos').textContent = fmtEUR(ingresoTotal);
+    document.getElementById('gastosMesNoComputado').textContent = fmtEUR(noComputado);
+
+    const prevMonth = prevMonthKey(month);
+    const prevRows = gastosForMonth(prevMonth);
+    const vsEl = document.getElementById('gastosMesVsAnterior');
+    if(prevRows.length && vsEl){
+      let prevGasto = 0;
+      prevRows.forEach(g=>{ if(!GASTO_EXCLUDED_FROM_TOTAL.has(g.categoria) && g.importe < 0) prevGasto += g.importe; });
+      const delta = Math.abs(gastoTotal) - Math.abs(prevGasto);
+      vsEl.textContent = (delta>=0?'+':'') + fmtEUR(delta) + ' vs ' + fmtMonthLabel(prevMonth);
+      vsEl.className = 'stat-sub ' + (delta>0?'neg':(delta<0?'pos':''));
+    } else if(vsEl){ vsEl.textContent = ''; vsEl.className = 'stat-sub'; }
+
+    const catTotals = {};
+    rows.forEach(g=>{ if(GASTO_EXCLUDED_FROM_TOTAL.has(g.categoria) || g.importe >= 0) return; catTotals[g.categoria] = (catTotals[g.categoria]||0) + Math.abs(g.importe); });
+    const catItems = GASTO_CATEGORIAS.filter(c=>catTotals[c.key]>0).map(c=>({ label:c.label, hex:c.hex, val:catTotals[c.key] })).sort((a,b)=>b.val-a.val);
+    renderGastosSpectrum('specGastosCat', 'specGastosCatLegend', catItems, Math.abs(gastoTotal));
+
+    const cuentaTotals = {};
+    rows.forEach(g=>{ cuentaTotals[g.cuenta] = (cuentaTotals[g.cuenta]||0) + Math.abs(g.importe); });
+    const totalCuenta = Object.values(cuentaTotals).reduce((a,b)=>a+b,0);
+    const cuentaItems = GASTO_CUENTAS.filter(c=>cuentaTotals[c.key]>0).map(c=>({ label:c.label, hex:c.hex, val:cuentaTotals[c.key] }));
+    renderGastosSpectrum('specGastosCuenta', 'specGastosCuentaLegend', cuentaItems, totalCuenta);
+
+    tbody.innerHTML = rows.map(g=>{
+      const catOptions = GASTO_CATEGORIAS.map(c=>'<option value="'+c.key+'"'+(c.key===g.categoria?' selected':'')+'>'+c.label+'</option>').join('');
+      const cuentaLabel = (GASTO_CUENTAS.find(c=>c.key===g.cuenta)||{}).label || g.cuenta;
+      const cls = g.importe >= 0 ? 'pos' : 'neg';
+      return '<tr>' +
+        '<td>'+fmtShortDate(g.fecha)+'</td>' +
+        '<td>'+escapeHtml(cuentaLabel)+'</td>' +
+        '<td class="gasto-cat"><select data-gasto-field="categoria" data-gasto-id="'+g.id+'">'+catOptions+'</select></td>' +
+        '<td>'+escapeHtml(g.concepto)+(g.nota==='pendiente'?' <span class="note">(pendiente)</span>':'')+'</td>' +
+        '<td class="num '+cls+'">'+(g.importe>=0?'+':'')+fmtEUR(g.importe)+'</td>' +
+        '<td class="del"><button class="del-btn-gasto" data-gasto-del="'+g.id+'" title="Eliminar">×</button></td>' +
+      '</tr>';
+    }).join('');
+  }
+  function exportGastosCSV(){
+    const rows = gastosForMonth(gastosSelectedMonth).slice().sort((a,b)=> a.fecha < b.fecha ? -1 : 1);
+    const headers = ['Fecha','Cuenta','Titular','Categoria','Concepto','Importe','Moneda','Nota'];
+    let csv = '﻿' + headers.join(';') + '\r\n';
+    rows.forEach(g=>{
+      const cuentaLabel = (GASTO_CUENTAS.find(c=>c.key===g.cuenta)||{}).label || g.cuenta;
+      csv += [g.fecha, cuentaLabel, g.titular, g.categoria, '"'+(g.concepto||'').replace(/"/g,'""')+'"', String(g.importe).replace('.',','), g.moneda, g.nota].join(';') + '\r\n';
+    });
+    const blob = new Blob([csv], { type:'text/csv;charset=utf-8;' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'gastos-' + gastosSelectedMonth + '.csv';
+    a.click();
+  }
   function toLiabilityDbRow(l){
     return { titular: l.veh, nombre: l.nombre, tipo: l.tipo, saldo_pendiente: l.saldoPendiente, cuota_mensual: l.cuotaMensual, inmueble_vinculado: l.inmuebleVinculado||'', fecha: l.fecha||'' };
   }
@@ -2249,15 +2522,18 @@
     }
     try{ state.inmuebles = await supabaseGetProperties(); }catch(e){}
     try{ state.pasivos = await supabaseGetLiabilities(); }catch(e){}
+    try{ state.gastos = await supabaseGetExpenses(); }catch(e){}
     try{ const t = await supabaseGetSetting('target_allocation'); if(t) state.targetAlloc = Object.assign({liquido:null,jubilacion:null,plazo:null}, t); }catch(e){}
     await loadIndexaHistory();
     document.getElementById('fxRate').value = state.fx;
     fillTargetAllocInputs();
+    fillGastosForm();
     buildCards();
     buildPropertyCards();
     renderPasivos();
     renderPropertySummary();
     renderSummary();
+    renderGastos();
     await maybeSaveSnapshot();
     loadSnapshots().then(refreshEvolution);
   }
@@ -2269,11 +2545,13 @@
       state = deserializeRows(rows);
       state.inmuebles = await supabaseGetProperties();
       state.pasivos = await supabaseGetLiabilities();
+      state.gastos = await supabaseGetExpenses();
       try{ const t = await supabaseGetSetting('target_allocation'); if(t) state.targetAlloc = Object.assign({liquido:null,jubilacion:null,plazo:null}, t); }catch(e){}
       await loadIndexaHistory();
       document.getElementById('fxRate').value = state.fx;
       fillTargetAllocInputs();
-      buildCards(); buildPropertyCards(); renderPasivos(); renderPropertySummary(); renderSummary();
+      fillGastosForm();
+      buildCards(); buildPropertyCards(); renderPasivos(); renderPropertySummary(); renderSummary(); renderGastos();
       loadSnapshots().then(refreshEvolution);
       setSyncStatus('Datos actualizados desde Supabase', 'ok');
     }catch(e){ setSyncStatus('Error al sincronizar (' + e.message + ')', 'err'); }
@@ -2291,11 +2569,13 @@
       state = deserializeRows(rows);
       state.inmuebles = await supabaseGetProperties();
       state.pasivos = await supabaseGetLiabilities();
+      state.gastos = await supabaseGetExpenses();
       try{ const t = await supabaseGetSetting('target_allocation'); if(t) state.targetAlloc = Object.assign({liquido:null,jubilacion:null,plazo:null}, t); }catch(e){}
       await loadIndexaHistory();
       document.getElementById('fxRate').value = state.fx;
       fillTargetAllocInputs();
-      buildCards(); renderSummary();
+      fillGastosForm();
+      buildCards(); renderSummary(); renderGastos();
       loadSnapshots().then(refreshEvolution);
       try{ localStorage.setItem('portfolio-data', JSON.stringify(state)); }catch(e){}
       const totalFailed = failed + ibFailed;
@@ -2472,6 +2752,19 @@
       refreshEurCells(cat);
       renderCardStats(cat); renderSummary(); scheduleSave();
     }
+    if(e.target.matches('[data-gasto-field]')){
+      const id = Number(e.target.dataset.gastoId), field = e.target.dataset.gastoField;
+      const row = (state.gastos||[]).find(g=>g.id===id);
+      if(row){
+        row[field] = e.target.value;
+        supabaseUpdateExpense(id, { [field]: e.target.value }).catch(()=>{});
+        renderGastos();
+      }
+    }
+    if(e.target.id === 'gastosMonthSelect'){
+      gastosSelectedMonth = e.target.value;
+      renderGastos();
+    }
   });
 
   document.addEventListener('click', (e)=>{
@@ -2517,6 +2810,38 @@
       state.pasivos.splice(idx,1);
       renderPasivos(); renderSummary(); scheduleSave();
     }
+    if(e.target.matches('[data-gasto-del]')){
+      const id = Number(e.target.dataset.gastoDel);
+      if(!confirm('¿Eliminar este gasto?')) return;
+      state.gastos = (state.gastos||[]).filter(g=>g.id !== id);
+      renderGastos();
+      supabaseDeleteExpense(id).catch(()=>{});
+    }
+    if(e.target.id === 'exportGastosBtn'){
+      exportGastosCSV();
+    }
+  });
+
+  document.getElementById('gfSubmit').addEventListener('click', async ()=>{
+    const row = {
+      fecha: document.getElementById('gfFecha').value || todayISO(),
+      cuenta: document.getElementById('gfCuenta').value,
+      titular: document.getElementById('gfTitular').value,
+      categoria: document.getElementById('gfCategoria').value,
+      concepto: document.getElementById('gfConcepto').value.trim(),
+      importe: parseFloat(document.getElementById('gfImporte').value) || 0,
+      moneda: 'EUR', nota: '',
+    };
+    try{
+      const saved = await supabaseAddExpense(row);
+      state.gastos = state.gastos || [];
+      state.gastos.push(saved);
+      gastosSelectedMonth = saved.fecha.slice(0,7);
+      renderGastos();
+      document.getElementById('gfConcepto').value = '';
+      document.getElementById('gfImporte').value = '';
+      document.getElementById('gfFecha').value = todayISO();
+    }catch(e){ alert('Error al guardar el gasto: ' + e.message); }
   });
 
   async function checkSessionAndStart(){
