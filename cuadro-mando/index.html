@@ -597,9 +597,28 @@
     </div>
 
     <div class="spectrum-block">
-      <p class="section-label">Por cuenta</p>
+      <p class="section-label">Por cuenta — gasto real</p>
       <div class="spectrum" id="specGastosCuenta"></div>
       <div class="spectrum-legend" id="specGastosCuentaLegend"></div>
+    </div>
+
+    <p class="section-label">Resumen por cuenta</p>
+    <p class="fiscal-caveat">Las transferencias entre tus propias cuentas (Bankinter común ↔ personal, hacia el broker...)
+      no son gasto ni ingreso — se separan en su propia columna. "Variación neta" es el movimiento real de saldo de la
+      cuenta ese mes (todo incluido) y debería cuadrar con el extracto del banco.</p>
+    <div class="table-scroll">
+      <table>
+        <thead><tr>
+          <th>Cuenta</th>
+          <th class="num">Ingresos</th>
+          <th class="num">Gasto real</th>
+          <th class="num">Transferencias internas</th>
+          <th class="num">Pago tarjeta</th>
+          <th class="num">Inversión</th>
+          <th class="num">Variación neta</th>
+        </tr></thead>
+        <tbody id="gastosCuentaResumenBody"></tbody>
+      </table>
     </div>
 
     <div class="panel" id="addGastoPanel">
@@ -1834,6 +1853,34 @@
       legEl.appendChild(item);
     });
   }
+  function renderGastosResumenCuenta(rows){
+    const tbody = document.getElementById('gastosCuentaResumenBody');
+    if(!tbody) return;
+    const byCuenta = {};
+    rows.forEach(g=>{
+      if(!byCuenta[g.cuenta]) byCuenta[g.cuenta] = { ingresos:0, gasto:0, transferencias:0, pagoTarjeta:0, inversion:0, neto:0 };
+      const b = byCuenta[g.cuenta];
+      b.neto += g.importe;
+      if(g.categoria === 'transferencia_interna') b.transferencias += g.importe;
+      else if(g.categoria === 'pago_tarjeta') b.pagoTarjeta += g.importe;
+      else if(g.categoria === 'inversion') b.inversion += g.importe;
+      else if(g.importe >= 0) b.ingresos += g.importe;
+      else b.gasto += g.importe;
+    });
+    const cuentasConMovimiento = GASTO_CUENTAS.filter(c=>byCuenta[c.key]);
+    tbody.innerHTML = cuentasConMovimiento.map(c=>{
+      const b = byCuenta[c.key];
+      return '<tr>' +
+        '<td>'+escapeHtml(c.label)+'</td>' +
+        '<td class="num pos">'+(b.ingresos>0?'+':'')+fmtEUR(b.ingresos)+'</td>' +
+        '<td class="num neg">'+fmtEUR(b.gasto)+'</td>' +
+        '<td class="num">'+(b.transferencias>=0?'+':'')+fmtEUR(b.transferencias)+'</td>' +
+        '<td class="num">'+(b.pagoTarjeta>=0?'+':'')+fmtEUR(b.pagoTarjeta)+'</td>' +
+        '<td class="num">'+(b.inversion>=0?'+':'')+fmtEUR(b.inversion)+'</td>' +
+        '<td class="num '+(b.neto>=0?'pos':'neg')+'">'+(b.neto>=0?'+':'')+fmtEUR(b.neto)+'</td>' +
+      '</tr>';
+    }).join('');
+  }
   function renderGastos(){
     fillGastosMonthSelect();
     const month = gastosSelectedMonth;
@@ -1869,11 +1916,13 @@
     const catItems = GASTO_CATEGORIAS.filter(c=>catTotals[c.key]>0).map(c=>({ label:c.label, hex:c.hex, val:catTotals[c.key] })).sort((a,b)=>b.val-a.val);
     renderGastosSpectrum('specGastosCat', 'specGastosCatLegend', catItems, Math.abs(gastoTotal));
 
-    const cuentaTotals = {};
-    rows.forEach(g=>{ cuentaTotals[g.cuenta] = (cuentaTotals[g.cuenta]||0) + Math.abs(g.importe); });
-    const totalCuenta = Object.values(cuentaTotals).reduce((a,b)=>a+b,0);
-    const cuentaItems = GASTO_CUENTAS.filter(c=>cuentaTotals[c.key]>0).map(c=>({ label:c.label, hex:c.hex, val:cuentaTotals[c.key] }));
-    renderGastosSpectrum('specGastosCuenta', 'specGastosCuentaLegend', cuentaItems, totalCuenta);
+    const cuentaGastoTotals = {};
+    rows.forEach(g=>{ if(GASTO_EXCLUDED_FROM_TOTAL.has(g.categoria) || g.importe >= 0) return; cuentaGastoTotals[g.cuenta] = (cuentaGastoTotals[g.cuenta]||0) + Math.abs(g.importe); });
+    const totalCuentaGasto = Object.values(cuentaGastoTotals).reduce((a,b)=>a+b,0);
+    const cuentaItems = GASTO_CUENTAS.filter(c=>cuentaGastoTotals[c.key]>0).map(c=>({ label:c.label, hex:c.hex, val:cuentaGastoTotals[c.key] }));
+    renderGastosSpectrum('specGastosCuenta', 'specGastosCuentaLegend', cuentaItems, totalCuentaGasto);
+
+    renderGastosResumenCuenta(rows);
 
     tbody.innerHTML = rows.map(g=>{
       const catOptions = GASTO_CATEGORIAS.map(c=>'<option value="'+c.key+'"'+(c.key===g.categoria?' selected':'')+'>'+c.label+'</option>').join('');

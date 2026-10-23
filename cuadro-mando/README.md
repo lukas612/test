@@ -503,6 +503,19 @@ moneda, nota`), misma política RLS que el resto.
   acciones/crowdfunding, eso ya se trackea en Movimientos). Quedan
   guardados y visibles en la tabla, pero no suman en "Gasto del mes" — se
   ven aparte en "No computado".
+- **"Resumen por cuenta"**: tabla con Ingresos / Gasto real / Transferencias
+  internas / Pago de tarjeta / Inversión / Variación neta por cuenta. Separa
+  explícitamente los traspasos entre tus propias cuentas del gasto real —
+  por eso una transferencia de la cuenta común a la personal aparece como
+  "Transferencias internas" en ambas filas, no como gasto en ninguna.
+  "Variación neta" es la suma de *todo* ese mes para la cuenta (incluyendo
+  transferencias) — es la única cifra pensada para cuadrar contra el saldo
+  real del extracto bancario; todas las demás columnas están filtradas a
+  propósito y no deberían sumar al saldo. El espectro "Por cuenta — gasto
+  real" de encima usa el mismo filtro que "Gasto del mes" (sin
+  transferencias/tarjeta/inversión) — antes sumaba todo sin filtrar y una
+  transferencia grande entre cuentas inflaba el % de esa cuenta sin haber
+  gastado nada de verdad.
 - **Selector de mes**: el bloque "Gasto del mes" compara siempre contra el
   mes natural anterior (aunque no tenga movimientos cargados, en cuyo caso
   no muestra comparación). Categorías y cuentas se desglosan con el mismo
