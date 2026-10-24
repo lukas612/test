@@ -257,6 +257,7 @@
   .gastos-month-bar{ display:flex; align-items:center; gap:14px; margin-bottom:20px; }
   .gastos-month-bar select{ background: var(--surface-2); border:1px solid var(--line); color: var(--ink); font-family:'IBM Plex Mono', monospace; font-size:13px; padding:7px 10px; border-radius:6px; }
   .gastos-month-note{ font-family:'IBM Plex Mono', monospace; font-size:11.5px; color: var(--ink-faint); }
+  .gastos-load-error{ font-family:'IBM Plex Mono', monospace; font-size:12px; color: var(--negative); margin:-10px 0 16px; }
   td.gasto-cat{ min-width:150px; }
   td.gasto-cat select{ width:100%; background: transparent; border:none; color: var(--ink); font-family:'IBM Plex Mono', monospace; font-size:12px; padding:4px; border-radius:4px; }
   td.gasto-cat select:focus{ background: var(--surface-2); }
@@ -571,6 +572,7 @@
       <select id="gastosMonthSelect"></select>
       <span class="gastos-month-note" id="gastosMonthNote"></span>
     </div>
+    <p class="gastos-load-error" id="gastosLoadError" style="display:none"></p>
 
     <div class="stat-row">
       <div class="stat-box highlight">
@@ -1829,6 +1831,21 @@
     const fechaEl = document.getElementById('gfFecha');
     if(fechaEl) fechaEl.value = todayISO();
   }
+  function setGastosLoadError(msg){
+    const el = document.getElementById('gastosLoadError');
+    if(!el) return;
+    if(msg){ el.textContent = 'No se pudieron cargar los gastos: ' + msg; el.style.display = ''; }
+    else { el.textContent = ''; el.style.display = 'none'; }
+  }
+  async function loadGastosInto(state){
+    try{
+      state.gastos = await supabaseGetExpenses();
+      setGastosLoadError(null);
+    }catch(e){
+      state.gastos = state.gastos || [];
+      setGastosLoadError(e.message);
+    }
+  }
   function fillGastosMonthSelect(){
     const sel = document.getElementById('gastosMonthSelect');
     if(!sel) return;
@@ -2571,7 +2588,7 @@
     }
     try{ state.inmuebles = await supabaseGetProperties(); }catch(e){}
     try{ state.pasivos = await supabaseGetLiabilities(); }catch(e){}
-    try{ state.gastos = await supabaseGetExpenses(); }catch(e){}
+    await loadGastosInto(state);
     try{ const t = await supabaseGetSetting('target_allocation'); if(t) state.targetAlloc = Object.assign({liquido:null,jubilacion:null,plazo:null}, t); }catch(e){}
     await loadIndexaHistory();
     document.getElementById('fxRate').value = state.fx;
@@ -2594,7 +2611,7 @@
       state = deserializeRows(rows);
       state.inmuebles = await supabaseGetProperties();
       state.pasivos = await supabaseGetLiabilities();
-      state.gastos = await supabaseGetExpenses();
+      await loadGastosInto(state);
       try{ const t = await supabaseGetSetting('target_allocation'); if(t) state.targetAlloc = Object.assign({liquido:null,jubilacion:null,plazo:null}, t); }catch(e){}
       await loadIndexaHistory();
       document.getElementById('fxRate').value = state.fx;
@@ -2618,7 +2635,7 @@
       state = deserializeRows(rows);
       state.inmuebles = await supabaseGetProperties();
       state.pasivos = await supabaseGetLiabilities();
-      state.gastos = await supabaseGetExpenses();
+      await loadGastosInto(state);
       try{ const t = await supabaseGetSetting('target_allocation'); if(t) state.targetAlloc = Object.assign({liquido:null,jubilacion:null,plazo:null}, t); }catch(e){}
       await loadIndexaHistory();
       document.getElementById('fxRate').value = state.fx;
