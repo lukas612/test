@@ -529,6 +529,25 @@ moneda, nota`), misma política RLS que el resto.
   "Servicio doméstico" (parece una nómina recurrente a la misma persona,
   pero es una suposición mía) y **"MIRASOTO"** (21 apariciones, importes
   variados) se dejó en "otros" porque no tengo forma de saber qué es.
+- **Detalle de la tarjeta VISA (cuenta común)**: los extractos de cuenta de
+  Bankinter solo traían el cargo mensual agregado de la VISA CLASICA
+  ("RECIBO VISA CLASICA" / "#RECOBRO RECIBO VISA"), ya importado y marcado
+  como `pago_tarjeta` (no cuenta en el total). Después subiste 5 PDFs de
+  "Extracto Tarjeta" con el detalle comercio a comercio de esa misma
+  tarjeta — uno resultó ser un duplicado exacto de otro (mismo periodo,
+  mismos importes) y se descartó. Los 4 extractos únicos (periodos
+  28/03–28/04, 28/04–27/05, 29/07–27/08 y 27/08–28/09 de 2026) se
+  importaron como 171 movimientos nuevos en `bankinter_comun`, categorizados
+  a mano con las mismas reglas que el resto, incluidas las comisiones por
+  "uso de redes internacionales" en compras en Panamá como
+  `comisiones_bancarias`. Cada periodo cuadra exactamente con la suma del
+  extracto (verificado por SQL), así que el "pago de tarjeta" agregado sigue
+  excluido del total y el detalle categorizado es el que ahora cuenta como
+  gasto real — sin duplicar nada. Categorías algo inciertas por nombre de
+  comercio poco claro (quedaron en "otros": ESTANCO N2 VILL PARDI/PARADA,
+  CENTRO UNIFICACION LIN, CREDESA, DE LA RUBIA Y MADERO, hoteles en
+  Panamá/Portugal) están ahí para que las corrijas desde la tabla si quieres
+  más detalle.
 
 ## Qué se quedó fuera de esta pasada (a propósito)
 
