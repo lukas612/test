@@ -16,6 +16,7 @@
     { id: 'teckel',          nombre: 'Teckel',           tamano: 'pequeno', fondo: '#fff0bf', base: '#a8582a', claro: '#d9925a', mancha: '#7a3c18', orejas: 'larga', hocico: 1.3 },
     { id: 'chihuahua',       nombre: 'Chihuahua',        tamano: 'pequeno', fondo: '#fff0bf', base: '#e3b77d', claro: '#f8e6cc', mancha: '#c99558', orejas: 'grande', hocico: 0.75 },
     { id: 'yorkshire',       nombre: 'Yorkshire',        tamano: 'pequeno', fondo: '#d6ecff', base: '#c9965a', claro: '#e6c08a', mancha: '#c9965a', orejas: 'pequena', hocico: 0.85, pelo: 'flequillo-gris', lazo: true },
+    { id: 'schnauzer',       nombre: 'Schnauzer',        tamano: null,      fondo: '#e6defc', base: '#8b9098', claro: '#e3e5e8', mancha: '#4a4f57', orejas: 'doblada', hocico: 1.2, pelo: 'barba' },
     { id: 'bichon',          nombre: 'Bichón maltés',    tamano: 'pequeno', fondo: '#d6ecff', base: '#ffffff', claro: '#ffffff', mancha: '#ece7e0', orejas: 'rizo',  hocico: 0.85, pelo: 'nube' },
     { id: 'pomerania',       nombre: 'Pomerania',        tamano: 'pequeno', fondo: '#d5f2e3', base: '#ee9a45', claro: '#f8cf9a', mancha: '#e08a35', orejas: 'pequena', hocico: 0.7, pelo: 'melena' },
     { id: 'shih-tzu',        nombre: 'Shih tzu',         tamano: 'pequeno', fondo: '#ffe0cc', base: '#ffffff', claro: '#ffffff', mancha: '#d9a35f', orejas: 'larga', hocico: 0.75, parche: 'antifaz', lazo: true },
@@ -128,11 +129,13 @@
     else out += '<circle cx="39" cy="50" r="4.2" fill="' + s + '"/><circle cx="61" cy="50" r="4.2" fill="' + s + '"/>';
     out +=
            '<circle cx="40.4" cy="48.6" r="1.4" fill="#fff"/><circle cx="62.4" cy="48.6" r="1.4" fill="#fff"/>';
+    if (r.pelo === 'barba') out += '<path d="M34,62 C34,74 40,90 50,92 C60,90 66,74 66,62 C60,66 40,66 34,62 Z" fill="' + r.claro + '" stroke="' + s + '" stroke-width="2" stroke-linejoin="round"/>';
     // Nariz y boca
     var ny = hy - hry + 6;
     out += '<path d="M44,' + ny + ' C44,' + (ny - 3) + ' 56,' + (ny - 3) + ' 56,' + ny + ' C56,' + (ny + 4) + ' 52,' + (ny + 6) + ' 50,' + (ny + 6) + ' C48,' + (ny + 6) + ' 44,' + (ny + 4) + ' 44,' + ny + ' Z" fill="' + s + '"/>';
     out += '<path d="M50,' + (ny + 6) + ' L50,' + (ny + 10) + ' M43,' + (ny + 9) + ' C46,' + (ny + 13) + ' 50,' + (ny + 12) + ' 50,' + (ny + 10) + ' C50,' + (ny + 12) + ' 54,' + (ny + 13) + ' 57,' + (ny + 9) + '" fill="none" stroke="' + s + '" stroke-width="2" stroke-linecap="round"/>';
     if (opts.lengua) out += '<path d="M47,' + (ny + 11) + ' C47,' + (ny + 18) + ' 53,' + (ny + 18) + ' 53,' + (ny + 11) + ' Z" fill="#f07a8a" stroke="' + s + '" stroke-width="1.6"/>';
+    if (r.pelo === 'barba') out += '<path d="M30,46 L36,40 L46,44 Z M70,46 L64,40 L54,44 Z" fill="' + r.claro + '" stroke="' + s + '" stroke-width="1.8" stroke-linejoin="round"/>';
     if (r.lazo) out += '<path d="M50,24 L40,17 L40,31 Z M50,24 L60,17 L60,31 Z" fill="#f07a9a" stroke="' + s + '" stroke-width="2" stroke-linejoin="round"/><circle cx="50" cy="24" r="3.4" fill="#f07a9a" stroke="' + s + '" stroke-width="2"/>';
     if (r.interrogacion) out += '<text x="50" y="22" text-anchor="middle" font-size="18" font-weight="800" fill="' + s + '" font-family="system-ui,sans-serif">?</text>';
     return out + '</svg>';

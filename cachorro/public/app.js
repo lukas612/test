@@ -340,7 +340,7 @@
         var tb = tipoBloque(b[2]);
         return '<li>' + burbuja(tb[0], tb[1]) + '<div><div class="hora">' + esc(b[0]) + '</div><div class="txt">' + esc(b[1]) + '</div></div></li>';
       }).join('') + '</ul><p class="nota">' + I('chispa') + '<span>' + esc(rut.nota) + '</span></p>' +
-        rut.avisosRaza.map(function (a) { return '<p class="nota raza-nota">' + I('huella') + '<span><b>Por ser ' + esc((D.raza(razaId()) || {}).nombre || 'tu perro').toLowerCase() + ':</b> ' + esc(a) + '</span></p>'; }).join('') + '</section>' +
+        rut.avisosRaza.map(function (a) { return '<p class="nota raza-nota">' + I('huella') + '<span><b>Por ser ' + esc((D.raza(razaId()) || {}).nombre || 'tu perro').toLowerCase() + ':</b> ' + esc(a.charAt(0).toLowerCase() + a.slice(1)) + '</span></p>'; }).join('') + '</section>' +
 
       '<section class="pila"><h2>¿' + esc(nombre()) + ' está en regla?</h2>' +
         '<div class="tarjeta"><ul class="legal-lista">' + legalItems.map(function (x) {

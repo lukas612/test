@@ -321,3 +321,7 @@ label.check input { margin-top: 2px; width: 20px; height: 20px; flex: none; acce
 .peek-candado span { display: inline-flex; align-items: center; gap: 8px; background: var(--ink); color: var(--bg); padding: 10px 14px; border-radius: 99px; font-weight: 700; font-size: .85rem; text-align: center; box-shadow: var(--shadow); }
 .peek-candado .ico { width: 18px; height: 18px; flex: none; }
 #ver-plan { margin-top: 4px; }
+
+/* "Otra raza" ocupa la fila entera al final del mosaico */
+.raza[data-raza="otra"] { grid-column: 1 / -1; flex-direction: row; justify-content: center; gap: 12px; padding: 10px 14px; font-size: .95rem; }
+.raza[data-raza="otra"] svg { width: 48px; max-width: 48px; }

@@ -91,6 +91,7 @@
     teckel:           { energia: 'media', actividad: 'olfato', cuidado: 'Evita que suba y baje del sofá o la cama de un salto y las escaleras largas: su espalda lo agradecerá. Cógele en brazos con una mano bajo el pecho y otra bajo el culete.' },
     chihuahua:        { energia: 'media', actividad: 'calma', cuidado: 'Es muy pequeño: cuidado con las caídas desde el sofá o los brazos, y con que le pisen en casa.' },
     yorkshire:        { energia: 'media', actividad: 'pensar', cuidado: 'Es muy pequeño: cuidado con las caídas y acostúmbrale pronto al cepillado diario.' },
+    schnauzer:        { energia: 'media', actividad: 'pensar', cuidado: 'Su barba y sus cejas necesitan cuidado: acostúmbrale ya a que le cepillen la cara y le limpien la barba después de comer, con premio.', nota: 'Suele avisar con ladridos de todo lo que pasa: premia cuando se calla, no cuando ladra.' },
     bichon:           { energia: 'media', actividad: 'calma', cuidado: 'Su pelo necesita cepillado frecuente: empieza ya con sesiones muy cortas y premios.' },
     pomerania:        { energia: 'media', actividad: 'pensar', cuidado: 'Es muy pequeño: cuidado con las caídas. Cepillado corto cada día desde ya.' },
     'shih-tzu':       { energia: 'baja', actividad: 'calma', cuidado: 'Tiene el hocico corto: evita el juego intenso y las horas de calor, y fíjate si respira con dificultad.' },
