@@ -139,7 +139,7 @@ const rutas = {
       sid: limpio(b.sid, 64),
       email: limpio(b.email, 200).toLowerCase(),
       respuestas: {
-        nombre: limpio(r.nombre, 40), raza: limpio(r.raza, 60), tamano: limpio(r.tamano, 10), edadSemanas: Number(r.edadSemanas) || 0,
+        nombre: limpio(r.nombre, 40), raza: limpio(r.raza, 60), razaId: limpio(r.razaId, 20), tamano: limpio(r.tamano, 10), edadSemanas: Number(r.edadSemanas) || 0,
         vivienda: limpio(r.vivienda, 10), horasSolo: Number(r.horasSolo) || 0, problema: limpio(r.problema, 12),
         convivientes: Array.isArray(r.convivientes) ? r.convivientes.map((x) => limpio(x, 20)) : [],
         primerPerro: limpio(r.primerPerro, 3), comunidad: limpio(r.comunidad, 40),

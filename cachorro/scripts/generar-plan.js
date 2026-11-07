@@ -15,6 +15,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const P = require('../content/plantillas.js');
+const D = require('../public/perros.js');
 
 const DATA = path.join(__dirname, '..', 'data');
 const clave = process.argv[2];
@@ -82,6 +83,7 @@ table{border-collapse:collapse;width:100%;font-size:.93rem}td{border-bottom:1px 
 @media print{body{background:#fff}h2{page-break-before:always}h2:first-of-type{page-break-before:auto}}
 </style></head><body><main>
 <p class="suave">${esc(marca)} · Plan personalizado</p>
+<div style="width:96px;height:96px">${D.cara(r.razaId || 'mestizo', { lengua: true })}</div>
 <h1>Plan de 8 semanas para ${esc(n)}</h1>
 <p>${esc(r.raza || 'Cachorro')} · ${esc(P.TAMANOS[perfil.tamano].nombre)} (${esc(P.TAMANOS[perfil.tamano].rango)}) · ${r.edadSemanas} semanas · ${r.vivienda === 'jardin' ? 'casa con jardín' : 'piso'} · ${esc(r.comunidad)}</p>
 <p class="aviso">Tu prioridad ahora: <b>${esc(protPrincipal.titulo.toLowerCase())}</b>. Empieza por esa sección y sigue el email de cada día.</p>
