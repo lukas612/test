@@ -1,0 +1,43 @@
+# Render (la misma cuenta que Vigila): servicio web Node, sin build.
+services:
+  - type: web
+    name: plan-cachorro
+    runtime: node
+    plan: starter        # el plan free se duerme y el primer visitante de un anuncio esperaría ~30 s
+    region: frankfurt
+    buildCommand: "true"
+    startCommand: node server.js
+    healthCheckPath: /salud
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: BASE_URL
+        sync: false
+      - key: MARCA
+        sync: false
+      - key: EMAIL_CONTACTO
+        sync: false
+      - key: TITULAR
+        sync: false
+      - key: SUPABASE_URL
+        value: https://wwxlzvfxlfuodikcamlq.supabase.co
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
+      - key: META_PIXEL_ID
+        sync: false
+      - key: PRECIOS
+        value: "1999"
+      - key: PRECIO_UPSELL
+        value: "999"
+      - key: ADMIN_TOKEN
+        generateValue: true
+      - key: APP_SECRET
+        generateValue: true

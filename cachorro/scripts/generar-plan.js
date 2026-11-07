@@ -1,46 +1,32 @@
 #!/usr/bin/env node
 /*
- * Genera el BORRADOR del plan de un comprador a partir de sus respuestas y las plantillas revisadas.
- * Fase 2 (entrega manual): este borrador se revisa a mano (y se puede pulir con Claude) antes de enviarlo.
+ * Genera el BORRADOR del plan de un comprador (fase 2: revisión manual antes de enviar).
  *
  *   node scripts/generar-plan.js <email o sid>
  *
- * Crea data/planes/<token>.html (página privada en /plan/<token>) e imprime:
- *  - la URL privada para enviar al cliente,
- *  - un prompt de revisión para pegar en Claude junto al HTML.
- * Para el PDF: abre la página privada y usa "Imprimir → Guardar como PDF".
+ * Guarda el plan (Supabase o data/) y lo deja visible en /plan/<token> para revisarlo.
+ * Imprime la URL y un prompt de revisión para Claude. Cuando esté revisado:
+ *   node scripts/enviar-plan.js <token>
  */
 'use strict';
-const fs = require('fs');
-const path = require('path');
+const { CFG } = require('../lib/config');
 const crypto = require('crypto');
+const datos = require('../lib/datos');
+const { render } = require('../content/plan-html.js');
 
-const DATA = path.join(__dirname, '..', 'data');
-const clave = process.argv[2];
-if (!clave) { console.error('Uso: node scripts/generar-plan.js <email o sid>'); process.exit(1); }
+(async () => {
+  const clave = process.argv[2];
+  if (!clave) { console.error('Uso: node scripts/generar-plan.js <email o sid>'); process.exit(1); }
+  const lead = (await datos.primero('leads', { email: clave.toLowerCase() })) || (await datos.primero('leads', { sid: clave }));
+  if (!lead) { console.error('No encuentro ese lead.'); process.exit(1); }
 
-const leads = leerJsonl('leads.jsonl');
-const lead = leads.reverse().find((l) => l.email === clave.toLowerCase() || l.sid === clave);
-if (!lead) { console.error('No encuentro ese lead.'); process.exit(1); }
+  const token = crypto.randomBytes(16).toString('hex');
+  const html = render({ respuestas: lead.respuestas, marca: CFG.marca, id: token, inicio: new Date().toISOString() });
+  await datos.insertar('planes', { token, sid: lead.sid, email: lead.email, html, estado: 'borrador' });
 
-const marca = process.env.MARCA || 'Plan Cachorro';
-const baseUrl = (process.env.BASE_URL || 'http://localhost:3000').replace(/\/$/, '');
-const r = lead.respuestas;
-const token = crypto.randomBytes(16).toString('hex');
-const html = require('../content/plan-html.js').render({ respuestas: r, marca, id: token, inicio: new Date().toISOString() });
-
-fs.mkdirSync(path.join(DATA, 'planes'), { recursive: true });
-fs.writeFileSync(path.join(DATA, 'planes', token + '.html'), html);
-fs.appendFileSync(path.join(DATA, 'entregas.jsonl'), JSON.stringify({ ts: new Date().toISOString(), sid: lead.sid, email: lead.email, token, estado: 'borrador' }) + '\n');
-
-console.log(`\nBorrador creado: data/planes/${token}.html`);
-console.log(`URL privada:     ${baseUrl}/plan/${token}\n`);
-console.log('--- Prompt de revisión para Claude (pega también el HTML) ---\n');
-console.log(`Revisa este plan de cachorro antes de enviarlo a un cliente. Perfil: ${JSON.stringify(r)}.
+  console.log(`\nBorrador guardado. Revísalo en: ${CFG.baseUrl}/plan/${token}`);
+  console.log(`Cuando esté bien: node scripts/enviar-plan.js ${token}\n`);
+  console.log('--- Prompt de revisión para Claude (pega también lo que ves en la página) ---\n');
+  console.log(`Revisa este plan de cachorro antes de enviarlo a un cliente. Perfil: ${JSON.stringify(lead.respuestas)}.
 Reglas: no inventes contenido nuevo; solo señala (1) contradicciones entre secciones o con el perfil, (2) cualquier frase que parezca consejo veterinario, de alimentación o una afirmación legal no prudente, (3) horarios imposibles para las horas que pasa solo, (4) cualquier método aversivo. Devuelve una lista de cambios concretos con el texto actual y el propuesto, o "OK" si no hay nada.`);
-
-function leerJsonl(f) {
-  const ruta = path.join(DATA, f);
-  if (!fs.existsSync(ruta)) return [];
-  return fs.readFileSync(ruta, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l));
-}
+})().catch((e) => { console.error(e.message); process.exit(1); });

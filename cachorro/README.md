@@ -18,6 +18,20 @@ Todo lo necesario para validar las puertas 1, 2 y 3 del [documento del MVP](docs
 | `scripts/metricas.js` | Funnel por ángulo y por precio, comparado con las puertas |
 | `scripts/exportar-leads.js` | CSV para la herramienta de email (compradores, no compradores y seguros), respetando los consentimientos |
 
+## Arquitectura
+
+Repositorio propio. Usa las mismas cuentas que Vigila:
+
+| Pieza | Dónde | Notas |
+| --- | --- | --- |
+| Web y API | Render (servicio Node, `render.yaml`) | Sin dependencias. `/salud` dice qué está conectado |
+| Datos | Supabase de Vigila (`wwxlzvfxlfuodikcamlq`) | Tablas `pc_*`, RLS sin políticas: solo la service_role key entra. No toca las tablas de Vigila |
+| Pagos | Stripe de Vigila | Pago único con `metadata.app=cachorro`; el webhook ignora lo que no es del cachorro |
+| Emails | Resend de Vigila | Con el dominio del cachorro verificado. Envío diario con GitHub Actions (`enviar-emails.yml`) |
+| Panel | `/admin.html` | Puertas 1, 2 y 3 en vivo, con `ADMIN_TOKEN` |
+
+Sin claves, todo funciona en local: datos en `data/`, pagos simulados y emails desactivados.
+
 ## Arrancar
 
 Requiere Node 18 o superior y no tiene dependencias.
@@ -51,23 +65,23 @@ Sin `STRIPE_SECRET_KEY` arranca en **modo demo**: los pagos se simulan y puedes 
 
 ## Día a día
 
-```bash
-node scripts/metricas.js
-```
+1. **Ventas:** el panel `/admin.html` muestra las puertas. Pon el gasto de Meta para ver el coste por formulario y el CAC.
+2. **Entregar cada venta (< 24 h):**
+   ```bash
+   node scripts/generar-plan.js cliente@email.com
+   ```
+   Revisa el borrador en la URL que imprime (con el prompt de revisión para Claude si quieres) y envíalo:
+   ```bash
+   node scripts/enviar-plan.js <token>
+   ```
+3. **Emails:** salen solos cada mañana. Para ver qué saldría hoy sin enviar nada:
+   ```bash
+   node scripts/enviar-emails.js --prueba
+   ```
 
-```bash
-node scripts/generar-plan.js cliente@email.com
-```
-
-```bash
-node scripts/exportar-leads.js compradores > compradores.csv
-```
-
-Para las métricas, copia antes el gasto por ángulo de Meta a `data/gasto.json`.
+Los scripts usan Supabase si el `.env` tiene `SUPABASE_SERVICE_ROLE_KEY`.
 
 ## Límites conscientes (no construir antes de validar)
 
-- **Almacenamiento:** archivos JSONL en `data/`, suficiente para cientos de leads. Se pasa a una base de datos en la fase 3.
 - **Entrega del plan:** manual, con borrador automático y revisión humana. La generación con IA y los emails automáticos son la fase 3.
-- **Emails:** se envían desde tu herramienta de email marketing importando los CSV. No hay integración directa.
 - **Pack de upsell:** no hay contenido escrito todavía; se prepara con el educador si se vende.

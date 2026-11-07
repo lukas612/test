@@ -9,29 +9,24 @@
  *   { "pis": 62.4, "noches": 58.1, "mordiscos": 60.0, "solo": 59.7, "rutina": 61.2 }
  */
 'use strict';
+require('../lib/config');
 const fs = require('fs');
 const path = require('path');
+const datos = require('../lib/datos');
 
 const IVA = 0.21;
-const PUERTAS = { costeForm: 0.75, compra: 0.05, ventasMin: 30, cac: 16, reembolsos: 0.05, clicsMin: 1000 };
+const PUERTAS = { costeForm: 0.75, compra: 0.05, ventasMin: 30, cac: 16, reembolsos: 0.05, clicsMin: 1000, utilMin: 0.8, respuestasMin: 20 };
 
-function leerJsonl(dir, f) {
-  const ruta = path.join(dir, f);
-  if (!fs.existsSync(ruta)) return [];
-  return fs.readFileSync(ruta, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l));
-}
 const anguloDe = (utm) => (utm && (utm.a || utm.utm_content)) || 'directo';
 const pct = (a, b) => (b ? a / b : null);
 const netoVenta = (c) => c / 100 / (1 + IVA) - (c / 100 * 0.015 + 0.25);
 
-function calcular(dir, opts) {
-  const eventos = leerJsonl(dir, 'eventos.jsonl');
-  const leads = leerJsonl(dir, 'leads.jsonl');
-  const pedidos = leerJsonl(dir, 'pedidos.jsonl').filter((p) => !p.demo || opts.incluirDemo);
-  const reembolsos = leerJsonl(dir, 'reembolsos.jsonl');
-  let gasto = {};
-  const gf = path.join(dir, 'gasto.json');
-  if (fs.existsSync(gf)) gasto = JSON.parse(fs.readFileSync(gf, 'utf8'));
+async function calcular(opts = {}) {
+  const [eventos, leads, pedidosTodos, reembolsos] = await Promise.all([datos.listar('eventos'), datos.listar('leads'), datos.listar('pedidos'), datos.listar('reembolsos')]);
+  const pedidos = pedidosTodos.filter((p) => !p.demo || opts.incluirDemo);
+  let gasto = opts.gastoPorAngulo || {};
+  const gf = path.join(__dirname, '..', 'data', 'gasto.json');
+  if (!opts.gastoPorAngulo && fs.existsSync(gf)) gasto = JSON.parse(fs.readFileSync(gf, 'utf8'));
 
   const leadPorSid = Object.fromEntries(leads.map((l) => [l.sid, l]));
   const fila = () => ({ visitas: 0, inicios: 0, forms: 0, compras: 0, upsells: 0, ingresosNetos: 0, reembolsos: 0 });
@@ -81,12 +76,15 @@ function calcular(dir, opts) {
   total.gasto = gastoTotal;
   Object.assign(total, deriva(total));
 
+  const notas = eventos.filter((e) => e.tipo === 'encuesta').map((e) => Number(String(e.paso).split(':')[1])).filter(Boolean);
+  const util = pct(notas.filter((x) => x >= 8).length, notas.length);
   const puertas = {
     puerta1: total.costeForm == null ? 'sin gasto' : total.costeForm <= PUERTAS.costeForm ? 'PASA' : 'NO PASA',
     puerta2: total.compras < PUERTAS.ventasMin ? `faltan datos (${total.compras}/${PUERTAS.ventasMin} ventas)` : (total.tasaCompra >= PUERTAS.compra && total.cac <= PUERTAS.cac ? 'PASA' : 'NO PASA'),
-    reembolsos: total.compras ? (total.tasaReembolso < PUERTAS.reembolsos ? 'dentro' : 'FUERA') : '—'
+    reembolsos: total.compras ? (total.tasaReembolso < PUERTAS.reembolsos ? 'dentro' : 'FUERA') : '—',
+    puerta3: notas.length < PUERTAS.respuestasMin ? `faltan datos (${notas.length}/${PUERTAS.respuestasMin} respuestas)` : (util >= PUERTAS.utilMin && total.tasaReembolso < PUERTAS.reembolsos ? 'PASA' : 'NO PASA')
   };
-  return { umbrales: PUERTAS, total, angulos, precios, puertas, clicSeguros: eventos.filter((e) => e.tipo === 'clic_seguros').length };
+  return { umbrales: PUERTAS, total, angulos, precios, puertas, encuesta: { respuestas: notas.length, util }, clicSeguros: eventos.filter((e) => e.tipo === 'clic_seguros').length, leadsSeguros: leads.filter((l) => l.consentimientos?.seguros).length };
 }
 
 function imprimir(m) {
@@ -105,12 +103,13 @@ function imprimir(m) {
   console.log(`Puerta 1 (≤ ${m.umbrales.costeForm} €/form): ${m.puertas.puerta1}`);
   console.log(`Puerta 2 (≥ ${m.umbrales.compra * 100}% compra y CAC ≤ ${m.umbrales.cac} €): ${m.puertas.puerta2}`);
   console.log(`Reembolsos (< ${m.umbrales.reembolsos * 100}%): ${m.puertas.reembolsos}`);
+  console.log(`Puerta 3 (≥ 8/10 útil y < 5% reembolsos): ${m.puertas.puerta3} · útil: ${p1(m.encuesta.util)} de ${m.encuesta.respuestas}`);
   console.log('Recuerda: mínimo 1.000 clics por ángulo para decidir la puerta 1 (los clics salen de Meta, no de aquí).');
 }
 
 if (require.main === module) {
   const i = process.argv.indexOf('--gasto');
   const opts = { gasto: i > 0 ? Number(process.argv[i + 1]) : null, incluirDemo: process.argv.includes('--demo') };
-  imprimir(calcular(path.join(__dirname, '..', 'data'), opts));
+  calcular(opts).then(imprimir).catch((e) => { console.error(e.message); process.exit(1); });
 }
 module.exports = { calcular };

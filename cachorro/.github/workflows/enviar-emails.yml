@@ -1,0 +1,28 @@
+name: Enviar emails diarios
+
+# Tareas diarias de los compradores, encuestas y emails a quien no compró.
+# Mismo patrón que send_lifecycle_emails.yml de Vigila.
+on:
+  schedule:
+    - cron: "37 7 * * *"   # 08:37 / 09:37 en España (UTC+1 / UTC+2)
+  workflow_dispatch: {}
+
+jobs:
+  enviar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Enviar
+        env:
+          BASE_URL: ${{ secrets.BASE_URL }}
+          MARCA: ${{ secrets.MARCA }}
+          TITULAR: ${{ secrets.TITULAR }}
+          SUPABASE_URL: https://wwxlzvfxlfuodikcamlq.supabase.co
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
+          APP_SECRET: ${{ secrets.APP_SECRET }}
+        run: node scripts/enviar-emails.js

@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Panel · Plan Cachorro</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Figtree:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="/styles.css">
+  <style>
+    main { max-width: 980px; }
+    .puertas { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+    .puerta { background: var(--surface); border-radius: 18px; padding: 16px; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 6px; }
+    .puerta b { font: 800 1.6rem var(--display); }
+    .estado { align-self: flex-start; font-size: .75rem; font-weight: 700; border-radius: 99px; padding: 4px 10px; background: var(--surface-2); }
+    .estado.si { background: var(--ok-bg); color: var(--ok); } .estado.no { background: var(--warn-bg); color: var(--warn); }
+    .tabla { overflow-x: auto; background: var(--surface); border-radius: 18px; box-shadow: var(--shadow); }
+    table { border-collapse: collapse; width: 100%; font-size: .88rem; font-variant-numeric: tabular-nums; }
+    th, td { padding: 10px 12px; text-align: right; border-bottom: 1px solid var(--line); white-space: nowrap; }
+    th:first-child, td:first-child { text-align: left; }
+    th { font-size: .75rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+    .fila-form { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .fila-form input { width: auto; flex: 1; min-width: 160px; padding: 10px 12px; font-size: .95rem; }
+    .fila-form .btn { width: auto; min-height: 44px; padding: 10px 18px; }
+  </style>
+</head>
+<body>
+  <header class="barra"><div class="barra-in"><span class="marca"><span class="logo">🐾</span>Panel</span></div></header>
+  <main class="pila-g">
+    <section class="pila">
+      <h1 style="font-size:1.8rem">Puertas del MVP</h1>
+      <div class="fila-form">
+        <input type="password" id="token" placeholder="Token de administración">
+        <input type="number" id="gasto" placeholder="Gasto total en Meta (€)" min="0" step="0.01">
+        <button class="btn" id="cargar">Ver métricas</button>
+      </div>
+      <p class="error" id="err"></p>
+    </section>
+    <section class="puertas" id="puertas"></section>
+    <section class="pila" id="tablas"></section>
+  </main>
+  <script>
+    (function () {
+      var $ = function (id) { return document.getElementById(id); };
+      try { $('token').value = sessionStorage.getItem('pc_admin') || ''; } catch (e) {}
+      var eur = function (x) { return x == null || isNaN(x) ? '—' : x.toFixed(2).replace('.', ',') + ' €'; };
+      var pct = function (x) { return x == null || isNaN(x) ? '—' : (x * 100).toFixed(1).replace('.', ',') + '%'; };
+      var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+      function puerta(titulo, valor, estado, detalle) {
+        var cls = /PASA$/.test(estado) && !/NO/.test(estado) ? 'si' : /NO PASA|FUERA/.test(estado) ? 'no' : '';
+        return '<div class="puerta"><span class="suave peq">' + titulo + '</span><b>' + valor + '</b><span class="estado ' + cls + '">' + esc(estado) + '</span><span class="peq suave">' + detalle + '</span></div>';
+      }
+      function tabla(titulo, filas) {
+        var cab = ['', 'Visitas', 'Forms', '% form', '€/form', 'Compras', '% compra', 'CAC', 'Neto/comp.', 'Upsells', 'Reemb.'];
+        return '<h2 style="font-size:1.2rem">' + titulo + '</h2><div class="tabla"><table><thead><tr>' + cab.map(function (c) { return '<th>' + c + '</th>'; }).join('') + '</tr></thead><tbody>' +
+          Object.keys(filas).map(function (k) { var f = filas[k]; return '<tr><td>' + esc(k) + '</td><td>' + (f.visitas || 0) + '</td><td>' + f.forms + '</td><td>' + pct(f.tasaForm) + '</td><td>' + eur(f.costeForm) + '</td><td>' + f.compras + '</td><td>' + pct(f.tasaCompra) + '</td><td>' + eur(f.cac) + '</td><td>' + eur(f.netoPorComprador) + '</td><td>' + f.upsells + '</td><td>' + f.reembolsos + '</td></tr>'; }).join('') +
+          '</tbody></table></div>';
+      }
+      $('cargar').onclick = function () {
+        var t = $('token').value.trim(); $('err').textContent = '';
+        try { sessionStorage.setItem('pc_admin', t); } catch (e) {}
+        fetch('/api/admin/metricas?token=' + encodeURIComponent(t) + ($('gasto').value ? '&gasto=' + $('gasto').value : ''))
+          .then(function (r) { if (r.status === 403) throw new Error('Token incorrecto.'); return r.json(); })
+          .then(function (m) {
+            var T = m.total;
+            $('puertas').innerHTML =
+              puerta('Puerta 1 · coste por formulario', eur(T.costeForm), m.puertas.puerta1, T.forms + ' formularios · objetivo ≤ ' + eur(m.umbrales.costeForm)) +
+              puerta('Puerta 2 · conversión a compra', pct(T.tasaCompra), m.puertas.puerta2, T.compras + ' ventas · CAC ' + eur(T.cac) + ' (≤ ' + eur(m.umbrales.cac) + ')') +
+              puerta('Puerta 3 · valor', pct(m.encuesta.util), m.puertas.puerta3, m.encuesta.respuestas + ' respuestas · reembolsos ' + pct(T.tasaReembolso)) +
+              puerta('Seguros (H6)', String(m.clicSeguros), 'clics', m.leadsSeguros + ' leads con consentimiento de seguros');
+            $('tablas').innerHTML = tabla('Por ángulo de anuncio', Object.assign({}, m.angulos, { TOTAL: T })) + tabla('Por precio (céntimos)', m.precios);
+          })
+          .catch(function (e) { $('err').textContent = e.message || 'No se han podido cargar las métricas.'; });
+      };
+    })();
+  </script>
+</body>
+</html>
