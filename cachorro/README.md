@@ -83,5 +83,5 @@ Los scripts usan Supabase si el `.env` tiene `SUPABASE_SERVICE_ROLE_KEY`.
 
 ## Límites conscientes (no construir antes de validar)
 
-- **Entrega del plan:** manual, con borrador automático y revisión humana. La generación con IA y los emails automáticos son la fase 3.
+- **Entrega del plan:** borrador automático, revisión humana y envío con un comando. Saltarse la revisión (generación y envío sin intervención) es la fase 3.
 - **Pack de upsell:** no hay contenido escrito todavía; se prepara con el educador si se vende.
