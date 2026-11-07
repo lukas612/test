@@ -271,7 +271,7 @@ const servidor = http.createServer(async (req, res) => {
     const m = url.pathname.match(/^\/plan\/([a-f0-9]{32})$/);
     if (m) return servirArchivo(res, path.join(DATA, 'planes', m[1] + '.html'));
 
-    if (url.pathname === '/plantillas.js') return servirArchivo(res, path.join(__dirname, 'content', 'plantillas.js'));
+    if (['/plantillas.js', '/tareas-diarias.js', '/plan-html.js'].includes(url.pathname)) return servirArchivo(res, path.join(__dirname, 'content', url.pathname.slice(1)));
     if (url.pathname === '/privacidad' || url.pathname === '/condiciones') {
       const html = fs.readFileSync(path.join(PUBLIC, url.pathname.slice(1) + '.html'), 'utf8')
         .replaceAll('{{MARCA}}', CFG.marca).replaceAll('{{EMAIL}}', CFG.emailContacto).replaceAll('{{TITULAR}}', CFG.titular);

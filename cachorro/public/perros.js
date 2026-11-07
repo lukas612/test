@@ -8,20 +8,30 @@
   var TRAZO = '#2a1f1a';
 
   // Cada raza: tamaño adulto por defecto, colores y forma.
-  // orejas: erecta | grande | murcielago | caida | larga | doblada | rizo | mixta
+  // orejas: erecta | pequena | grande | murcielago | caida | larga | larga-rizo | doblada | rizo | mixta
+  // Orden: mestizo primero y luego por popularidad aproximada en España (RSCE y prensa); "otra" al final.
   var RAZAS = [
-    { id: 'mestizo',         nombre: 'Mestizo',         tamano: null,      fondo: '#ffe0cc', base: '#b9844f', claro: '#f3dfc6', mancha: '#6d4a2c', orejas: 'mixta', hocico: 1,   parche: 'ojo' },
-    { id: 'caniche',         nombre: 'Caniche',         tamano: 'pequeno', fondo: '#e6defc', base: '#f2e6d3', claro: '#fbf4ea', mancha: '#e2cfb3', orejas: 'rizo',  hocico: 1.1, pelo: 'rizo' },
-    { id: 'chihuahua',       nombre: 'Chihuahua',       tamano: 'pequeno', fondo: '#fff0bf', base: '#e3b77d', claro: '#f8e6cc', mancha: '#c99558', orejas: 'grande', hocico: 0.75 },
-    { id: 'bichon',          nombre: 'Bichón maltés',   tamano: 'pequeno', fondo: '#d6ecff', base: '#ffffff', claro: '#ffffff', mancha: '#ece7e0', orejas: 'rizo',  hocico: 0.85, pelo: 'nube' },
-    { id: 'bulldog-frances', nombre: 'Bulldog francés', tamano: 'mediano', fondo: '#d5f2e3', base: '#4a4542', claro: '#f1ece6', mancha: '#2e2a28', orejas: 'murcielago', hocico: 0.7, parche: 'pecho' },
-    { id: 'beagle',          nombre: 'Beagle',          tamano: 'mediano', fondo: '#ffe0cc', base: '#c47a3c', claro: '#ffffff', mancha: '#3a2c24', orejas: 'larga', hocico: 1.05, parche: 'franja' },
-    { id: 'border-collie',   nombre: 'Border collie',   tamano: 'mediano', fondo: '#d6ecff', base: '#2b2725', claro: '#ffffff', mancha: '#2b2725', orejas: 'doblada', hocico: 1.1, parche: 'franja' },
-    { id: 'podenco',         nombre: 'Podenco',         tamano: 'mediano', fondo: '#fff0bf', base: '#c8763a', claro: '#f6e2cd', mancha: '#a85c26', orejas: 'grande', hocico: 1.25 },
-    { id: 'labrador',        nombre: 'Labrador',        tamano: 'grande',  fondo: '#d5f2e3', base: '#e9c27f', claro: '#f6e1b8', mancha: '#d4a75e', orejas: 'caida', hocico: 1.15 },
-    { id: 'golden',          nombre: 'Golden retriever', tamano: 'grande', fondo: '#ffe0cc', base: '#d9963f', claro: '#f2c886', mancha: '#b8762a', orejas: 'caida', hocico: 1.15, pelo: 'flequillo' },
-    { id: 'pastor-aleman',   nombre: 'Pastor alemán',   tamano: 'grande',  fondo: '#e6defc', base: '#c98b45', claro: '#e9c08a', mancha: '#2d2420', orejas: 'erecta', hocico: 1.3, parche: 'mascara' },
-    { id: 'otra',            nombre: 'Otra raza',       tamano: null,      fondo: '#eceff4', base: '#d8cfc6', claro: '#f3eee8', mancha: '#b9ad9f', orejas: 'caida', hocico: 1, interrogacion: true }
+    { id: 'mestizo',         nombre: 'Mestizo',          tamano: null,      fondo: '#ffe0cc', base: '#b9844f', claro: '#f3dfc6', mancha: '#6d4a2c', orejas: 'mixta', hocico: 1,   parche: 'ojo' },
+    { id: 'caniche',         nombre: 'Caniche',          tamano: 'pequeno', fondo: '#e6defc', base: '#f2e6d3', claro: '#fbf4ea', mancha: '#e2cfb3', orejas: 'rizo',  hocico: 1.1, pelo: 'rizo' },
+    { id: 'teckel',          nombre: 'Teckel',           tamano: 'pequeno', fondo: '#fff0bf', base: '#a8582a', claro: '#d9925a', mancha: '#7a3c18', orejas: 'larga', hocico: 1.3 },
+    { id: 'chihuahua',       nombre: 'Chihuahua',        tamano: 'pequeno', fondo: '#fff0bf', base: '#e3b77d', claro: '#f8e6cc', mancha: '#c99558', orejas: 'grande', hocico: 0.75 },
+    { id: 'yorkshire',       nombre: 'Yorkshire',        tamano: 'pequeno', fondo: '#d6ecff', base: '#c9965a', claro: '#e6c08a', mancha: '#c9965a', orejas: 'pequena', hocico: 0.85, pelo: 'flequillo-gris', lazo: true },
+    { id: 'bichon',          nombre: 'Bichón maltés',    tamano: 'pequeno', fondo: '#d6ecff', base: '#ffffff', claro: '#ffffff', mancha: '#ece7e0', orejas: 'rizo',  hocico: 0.85, pelo: 'nube' },
+    { id: 'pomerania',       nombre: 'Pomerania',        tamano: 'pequeno', fondo: '#d5f2e3', base: '#ee9a45', claro: '#f8cf9a', mancha: '#e08a35', orejas: 'pequena', hocico: 0.7, pelo: 'melena' },
+    { id: 'shih-tzu',        nombre: 'Shih tzu',         tamano: 'pequeno', fondo: '#ffe0cc', base: '#ffffff', claro: '#ffffff', mancha: '#d9a35f', orejas: 'larga', hocico: 0.75, parche: 'antifaz', lazo: true },
+    { id: 'bulldog-frances', nombre: 'Bulldog francés',  tamano: 'mediano', fondo: '#d5f2e3', base: '#4a4542', claro: '#f1ece6', mancha: '#2e2a28', orejas: 'murcielago', hocico: 0.7, parche: 'pecho' },
+    { id: 'jack-russell',    nombre: 'Jack Russell',     tamano: 'pequeno', fondo: '#e6defc', base: '#ffffff', claro: '#ffffff', mancha: '#b5713a', orejas: 'doblada', hocico: 1.05, parche: 'antifaz' },
+    { id: 'beagle',          nombre: 'Beagle',           tamano: 'mediano', fondo: '#ffe0cc', base: '#c47a3c', claro: '#ffffff', mancha: '#3a2c24', orejas: 'larga', hocico: 1.05, parche: 'franja' },
+    { id: 'cocker',          nombre: 'Cocker spaniel',   tamano: 'mediano', fondo: '#fff0bf', base: '#d9963f', claro: '#efc07a', mancha: '#b8762a', orejas: 'larga-rizo', hocico: 1.05 },
+    { id: 'border-collie',   nombre: 'Border collie',    tamano: 'mediano', fondo: '#d6ecff', base: '#2b2725', claro: '#ffffff', mancha: '#2b2725', orejas: 'doblada', hocico: 1.1, parche: 'franja' },
+    { id: 'perro-agua',      nombre: 'Perro de agua',    tamano: 'mediano', fondo: '#d5f2e3', base: '#6b4a34', claro: '#8a6448', mancha: '#5a3c28', orejas: 'rizo',  hocico: 1, pelo: 'rizo' },
+    { id: 'podenco',         nombre: 'Podenco',          tamano: 'mediano', fondo: '#fff0bf', base: '#c8763a', claro: '#f6e2cd', mancha: '#a85c26', orejas: 'grande', hocico: 1.25 },
+    { id: 'setter',          nombre: 'Setter inglés',    tamano: 'grande',  fondo: '#e6defc', base: '#ffffff', claro: '#ffffff', mancha: '#c8692e', orejas: 'larga', hocico: 1.25, parche: 'motas' },
+    { id: 'labrador',        nombre: 'Labrador',         tamano: 'grande',  fondo: '#d5f2e3', base: '#e9c27f', claro: '#f6e1b8', mancha: '#d4a75e', orejas: 'caida', hocico: 1.15 },
+    { id: 'golden',          nombre: 'Golden retriever', tamano: 'grande',  fondo: '#ffe0cc', base: '#d9963f', claro: '#f2c886', mancha: '#b8762a', orejas: 'caida', hocico: 1.15, pelo: 'flequillo' },
+    { id: 'pastor-aleman',   nombre: 'Pastor alemán',    tamano: 'grande',  fondo: '#e6defc', base: '#c98b45', claro: '#e9c08a', mancha: '#2d2420', orejas: 'erecta', hocico: 1.3, parche: 'mascara' },
+    { id: 'husky',           nombre: 'Husky',            tamano: 'grande',  fondo: '#d6ecff', base: '#7d8794', claro: '#ffffff', mancha: '#5f6874', orejas: 'erecta', hocico: 1.15, parche: 'husky', ojos: '#5aa9e6' },
+    { id: 'otra',            nombre: 'Otra raza',        tamano: null,      fondo: '#eceff4', base: '#d8cfc6', claro: '#f3eee8', mancha: '#b9ad9f', orejas: 'caida', hocico: 1, interrogacion: true }
   ];
   var porId = {};
   RAZAS.forEach(function (r) { porId[r.id] = r; });
@@ -52,6 +62,14 @@
         return [[cx, 50, 11], [cx, 62, 10], [cx + lado * -2, 39, 9]].map(function (q) {
           return '<circle cx="' + q[0] + '" cy="' + q[1] + '" r="' + q[2] + '" fill="' + m + '" stroke="' + s + '" stroke-width="2.2"/>';
         }).join('');
+      case 'pequena':
+        return '<path d="' + espejo('M28,42 L29,20 L43,32 Z') + '" fill="' + m + '" stroke="' + s + '" stroke-width="2.4" stroke-linejoin="round"/>' +
+               '<path d="' + espejo('M31,37 L31,25 L39,32 Z') + '" fill="#f5c6b8"/>';
+      case 'larga-rizo':
+        var lx = lado < 0 ? 19 : 81;
+        return oreja('larga', lado, r) + [[lx, 56, 6], [lx, 66, 6], [lx, 75, 5.5]].map(function (q) {
+          return '<circle cx="' + q[0] + '" cy="' + q[1] + '" r="' + q[2] + '" fill="' + r.mancha + '" stroke="' + s + '" stroke-width="1.6"/>';
+        }).join('');
       case 'mixta':
         return oreja(lado < 0 ? 'erecta' : 'caida', lado, r);
     }
@@ -65,8 +83,15 @@
     var out = '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="' + r.nombre + '" class="' + (opts.clase || 'perro') + '">';
     if (!opts.sinFondo) out += '<circle cx="50" cy="50" r="50" fill="' + r.fondo + '"/>';
     // Orejas detrás
-    if (r.orejas !== 'caida' && r.orejas !== 'larga' && r.orejas !== 'rizo' && r.orejas !== 'mixta') out += oreja(r.orejas, -1, r) + oreja(r.orejas, 1, r);
+    var delante = ['caida', 'larga', 'rizo', 'larga-rizo'];
+    if (delante.indexOf(r.orejas) < 0 && r.orejas !== 'mixta') out += oreja(r.orejas, -1, r) + oreja(r.orejas, 1, r);
     if (r.orejas === 'mixta') out += oreja('erecta', -1, r);
+    if (r.pelo === 'melena') {
+      for (var k = 0; k < 12; k++) {
+        var ang = k / 12 * Math.PI * 2, mx = 50 + Math.cos(ang) * 30, my = 56 + Math.sin(ang) * 30;
+        out += '<circle cx="' + mx.toFixed(1) + '" cy="' + my.toFixed(1) + '" r="10" fill="' + r.mancha + '" stroke="' + s + '" stroke-width="2"/>';
+      }
+    }
     // Pelo de nube / rizo
     if (r.pelo === 'nube' || r.pelo === 'rizo') {
       [[30, 34, 13], [50, 26, 15], [70, 34, 13], [24, 52, 12], [76, 52, 12]].forEach(function (q) {
@@ -85,21 +110,30 @@
     if (r.parche === 'mascara') out += '<path d="M50,44 C62,44 70,52 70,62 C70,74 62,82 50,82 C38,82 30,74 30,62 C30,52 38,44 50,44 Z" fill="' + r.mancha + '" opacity=".9"/>';
     if (r.parche === 'ojo') out += '<ellipse cx="38" cy="50" rx="10" ry="9" fill="' + r.mancha + '"/>';
     if (r.parche === 'pecho') out += '<path d="M40,80 C44,72 56,72 60,80 Z" fill="' + r.claro + '"/>';
+    if (r.parche === 'antifaz') out += '<ellipse cx="38" cy="49" rx="10" ry="10" fill="' + r.mancha + '"/><ellipse cx="62" cy="49" rx="10" ry="10" fill="' + r.mancha + '"/><path d="M50,36 L47,58 L53,58 Z" fill="' + r.base + '"/>';
+    if (r.parche === 'motas') [[34, 40], [62, 38], [70, 50], [30, 56], [42, 34], [66, 62]].forEach(function (q) { out += '<circle cx="' + q[0] + '" cy="' + q[1] + '" r="2.4" fill="' + r.mancha + '"/>'; });
+    if (r.parche === 'motas') out += '<ellipse cx="62" cy="48" rx="9" ry="8" fill="' + r.mancha + '"/>';
+    if (r.parche === 'husky') out += '<path d="M50,46 C64,40 74,52 74,62 C74,76 62,84 50,84 C38,84 26,76 26,62 C26,52 36,40 50,46 Z" fill="' + r.claro + '"/><ellipse cx="39" cy="42" rx="4" ry="2.6" fill="' + r.claro + '"/><ellipse cx="61" cy="42" rx="4" ry="2.6" fill="' + r.claro + '"/><path d="M50,30 L46,46 L54,46 Z" fill="' + r.claro + '"/>';
+    if (r.pelo === 'flequillo-gris') out += '<path d="M30,40 C34,28 44,24 50,24 C56,24 66,28 70,40 C64,34 58,34 50,38 C42,34 36,34 30,40 Z" fill="#8a96a6" stroke="' + s + '" stroke-width="2"/>';
     if (r.pelo === 'flequillo') out += '<path d="M38,30 C44,36 48,34 50,28 C52,34 56,36 62,30" fill="none" stroke="' + r.mancha + '" stroke-width="3" stroke-linecap="round"/>';
     // Orejas delante
-    if (r.orejas === 'caida' || r.orejas === 'larga' || r.orejas === 'rizo') out += oreja(r.orejas, -1, r) + oreja(r.orejas, 1, r);
+    if (delante.indexOf(r.orejas) >= 0) out += oreja(r.orejas, -1, r) + oreja(r.orejas, 1, r);
     if (r.orejas === 'mixta') out += oreja('caida', 1, r);
     // Hocico
     var hy = 64 + (h - 1) * 4, hrx = 14 + (h - 1) * 6, hry = 11 + (h - 1) * 6;
     out += '<ellipse cx="50" cy="' + hy + '" rx="' + hrx + '" ry="' + hry + '" fill="' + r.claro + '" stroke="' + s + '" stroke-width="2"/>';
     // Ojos
-    out += '<circle cx="39" cy="50" r="4.2" fill="' + s + '"/><circle cx="61" cy="50" r="4.2" fill="' + s + '"/>' +
+    if (r.ojos) out += '<circle cx="39" cy="50" r="4.6" fill="' + r.ojos + '" stroke="' + s + '" stroke-width="1.4"/><circle cx="61" cy="50" r="4.6" fill="' + r.ojos + '" stroke="' + s + '" stroke-width="1.4"/>' +
+      '<circle cx="39" cy="50" r="2.2" fill="' + s + '"/><circle cx="61" cy="50" r="2.2" fill="' + s + '"/>';
+    else out += '<circle cx="39" cy="50" r="4.2" fill="' + s + '"/><circle cx="61" cy="50" r="4.2" fill="' + s + '"/>';
+    out +=
            '<circle cx="40.4" cy="48.6" r="1.4" fill="#fff"/><circle cx="62.4" cy="48.6" r="1.4" fill="#fff"/>';
     // Nariz y boca
     var ny = hy - hry + 6;
     out += '<path d="M44,' + ny + ' C44,' + (ny - 3) + ' 56,' + (ny - 3) + ' 56,' + ny + ' C56,' + (ny + 4) + ' 52,' + (ny + 6) + ' 50,' + (ny + 6) + ' C48,' + (ny + 6) + ' 44,' + (ny + 4) + ' 44,' + ny + ' Z" fill="' + s + '"/>';
     out += '<path d="M50,' + (ny + 6) + ' L50,' + (ny + 10) + ' M43,' + (ny + 9) + ' C46,' + (ny + 13) + ' 50,' + (ny + 12) + ' 50,' + (ny + 10) + ' C50,' + (ny + 12) + ' 54,' + (ny + 13) + ' 57,' + (ny + 9) + '" fill="none" stroke="' + s + '" stroke-width="2" stroke-linecap="round"/>';
     if (opts.lengua) out += '<path d="M47,' + (ny + 11) + ' C47,' + (ny + 18) + ' 53,' + (ny + 18) + ' 53,' + (ny + 11) + ' Z" fill="#f07a8a" stroke="' + s + '" stroke-width="1.6"/>';
+    if (r.lazo) out += '<path d="M50,24 L40,17 L40,31 Z M50,24 L60,17 L60,31 Z" fill="#f07a9a" stroke="' + s + '" stroke-width="2" stroke-linejoin="round"/><circle cx="50" cy="24" r="3.4" fill="#f07a9a" stroke="' + s + '" stroke-width="2"/>';
     if (r.interrogacion) out += '<text x="50" y="22" text-anchor="middle" font-size="18" font-weight="800" fill="' + s + '" font-family="system-ui,sans-serif">?</text>';
     return out + '</svg>';
   }

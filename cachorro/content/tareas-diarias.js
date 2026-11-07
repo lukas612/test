@@ -3,7 +3,9 @@
  * BORRADOR PENDIENTE DE REVISIÓN por el educador canino.
  * {n} se sustituye por el nombre del cachorro.
  */
-module.exports = [
+(function (root) {
+  'use strict';
+  var TAREAS = [
   // Semana 1 — Llegada y rutina
   { dia: 1,  titulo: 'Su zona segura', tarea: 'Monta la zona segura de {n}: cama, agua, empapador y un mordedor. Hoy solo descansa y explora poco a poco.' },
   { dia: 2,  titulo: 'Los 5 momentos de pis', tarea: 'Saca a {n} al despertar, después de comer, de jugar, de una emoción y antes de dormir. Apunta cada pis.' },
@@ -69,3 +71,6 @@ module.exports = [
   { dia: 55, titulo: 'Truco nuevo', tarea: 'Enseña algo divertido: "choca" o dar la vuelta. Solo juego.' },
   { dia: 56, titulo: '¡Lo habéis conseguido!', tarea: 'Mira cómo era {n} el primer día y cómo es hoy. Rellena la encuesta final.' }
 ];
+  if (typeof module !== 'undefined' && module.exports) module.exports = TAREAS;
+  else root.TAREAS = TAREAS;
+})(this);

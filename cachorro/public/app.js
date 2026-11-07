@@ -312,18 +312,9 @@
   }
 
   // ---------- Resultado gratis + paywall ----------
-  function perfilPlan() { var r = estado.r; return { nombre: r.nombre, edadSemanas: Number(r.edadSemanas), tamano: r.tamano || 'mediano', vivienda: r.vivienda, horasSolo: Number(r.horasSolo) }; }
-  function tipoBloque(txt) {
-    var t = txt.toLowerCase();
-    if (/te vas|vuelves/.test(t)) return ['puerta', 'peach'];
-    if (/desayuno|comida/.test(t)) return ['cuenco', 'butter'];
-    if (/nocturna|a dormir/.test(t)) return ['luna', 'lilac'];
-    if (/socializ/.test(t)) return ['personas', 'mint'];
-    if (/juego|sesión/.test(t)) return ['pelota', 'mint'];
-    if (/despertar/.test(t)) return ['sol', 'butter'];
-    if (/pis|empapador/.test(t)) return ['gota', 'sky'];
-    return ['reloj', 'sky'];
-  }
+  function perfilPlan() { var r = estado.r; return { nombre: r.nombre, raza: r.raza, razaId: r.razaId, edadSemanas: Number(r.edadSemanas), tamano: r.tamano || 'mediano', vivienda: r.vivienda, horasSolo: Number(r.horasSolo), problema: r.problema, convivientes: r.convivientes || [] }; }
+  var TIPOS = (window.PLAN_HTML && window.PLAN_HTML.TIPOS) || {};
+  function tipoBloque(tipo) { return TIPOS[tipo] || ['reloj', 'sky']; }
   var ICONO_LEGAL = { chip: 'chip', registro: 'ley', rabia: 'vacuna', seguro: 'escudo', curso: 'calendario' };
 
   function resultado() {
@@ -335,18 +326,21 @@
     var legalItems = P.LEGAL.items.filter(function (x) { return x.id !== 'ppp'; });
     var prot = P.PROTOCOLOS[r.problema] || P.PROTOCOLOS.pis;
     var faltaSeguro = tiene.indexOf('seguro') < 0;
+    var ajustes = [['perro', r.raza || 'Su raza'], ['reloj', r.edadSemanasTexto || 'Su edad'], [({ pis: 'gota', mordiscos: 'diente', noches: 'luna', solo: 'puerta' })[r.problema] || 'gota', P.PROBLEMAS[r.problema] || 'Tu problema'], [r.vivienda === 'jardin' ? 'casa' : 'piso', r.vivienda === 'jardin' ? 'Casa con jardín' : 'Piso'], ['puerta', r.horasSolo ? r.horasSoloTexto + ' sin nadie' : 'Siempre acompañado']];
+    if ((r.convivientes || []).indexOf('ninos') >= 0) ajustes.push(['nino', 'Niños en casa']);
     var chips = [r.raza, r.edadSemanasTexto, r.vivienda === 'jardin' ? 'Casa con jardín' : 'Piso', r.horasSolo ? r.horasSoloTexto + ' sin nadie' : 'Casi nunca sin nadie'].filter(Boolean);
 
     var html =
       '<div class="pila-g">' +
       '<section class="pila"><div class="perfil"><span class="avatar">' + D.cara(razaId(), { lengua: true }) + '</span>' +
         '<div class="pila" style="gap:6px"><span class="chip ok">' + I('check') + 'Gratis para ti</span><h1 style="font-size:1.7rem">La rutina de mañana para ' + esc(nombre()) + '</h1></div></div>' +
-        '<div class="chips">' + chips.map(function (c) { return '<span class="chip">' + esc(c) + '</span>'; }).join('') + '</div></section>' +
+        '<div class="ajustes"><span class="suave peq">Ajustada a:</span>' + ajustes.map(function (a) { return '<span class="chip">' + I(a[0]) + esc(a[1]) + '</span>'; }).join('') + '</div></section>' +
 
       '<section class="tarjeta pila"><ul class="linea-tiempo">' + rut.bloques.map(function (b) {
-        var tb = tipoBloque(b[1]);
+        var tb = tipoBloque(b[2]);
         return '<li>' + burbuja(tb[0], tb[1]) + '<div><div class="hora">' + esc(b[0]) + '</div><div class="txt">' + esc(b[1]) + '</div></div></li>';
-      }).join('') + '</ul><p class="nota">' + I('chispa') + '<span>' + esc(rut.nota) + '</span></p></section>' +
+      }).join('') + '</ul><p class="nota">' + I('chispa') + '<span>' + esc(rut.nota) + '</span></p>' +
+        rut.avisosRaza.map(function (a) { return '<p class="nota raza-nota">' + I('huella') + '<span><b>Por ser ' + esc((D.raza(razaId()) || {}).nombre || 'tu perro').toLowerCase() + ':</b> ' + esc(a) + '</span></p>'; }).join('') + '</section>' +
 
       '<section class="pila"><h2>¿' + esc(nombre()) + ' está en regla?</h2>' +
         '<div class="tarjeta"><ul class="legal-lista">' + legalItems.map(function (x) {
@@ -356,11 +350,7 @@
         }).join('') + '</ul><p class="peq suave" style="margin-top:8px">' + esc(P.LEGAL.aviso) + '</p>' +
         (faltaSeguro ? '<div style="margin-top:12px"><button class="btn sec" id="seguros">' + I('escudo') + 'Quiero comparar seguros</button></div>' : '') + '</div></section>' +
 
-      '<section class="pila"><h2>Lo que viene en su plan de 8 semanas</h2>' +
-        '<div class="bloqueados">' +
-          bloq(({ pis: 'gota', mordiscos: 'diente', noches: 'luna', solo: 'puerta' })[r.problema] || 'gota', 'sky', prot.titulo) + bloq('personas', 'mint', 'Socialización: semana 1 a 8') +
-          bloq('calendario', 'butter', 'Rutina de la semana 2, ajustada a su edad') + bloq('vacuna', 'lilac', 'Calendario de salud para tu veterinario') +
-        '</div></section>' +
+      '<section class="pila"><h2>Así es su plan de 8 semanas</h2>' + vistaPrevia() + '</section>' +
       paywallHtml() + '</div>';
     pintar(html);
     evento('paywall_visto');
@@ -369,8 +359,19 @@
     if (bs) bs.onclick = function () { evento('clic_seguros'); bs.outerHTML = '<p class="chip ok">' + I('check') + 'Apuntado: te avisaremos con la comparativa</p>'; };
     activarPaywall();
   }
-  function bloq(ic, color, titulo) {
-    return '<div class="bloq">' + burbuja(ic, color) + '<b>' + esc(titulo) + '</b><div class="lineas"><i style="width:92%"></i><i style="width:76%"></i><i style="width:84%"></i></div><span class="cand">' + I('candado') + 'En el plan completo</span></div>';
+  function vistaPrevia() {
+    var T = window.TAREAS || [];
+    var n = nombre();
+    var dias = T.slice(0, 7).map(function (t, k) {
+      return '<li' + (k > 2 ? ' class="borroso"' : '') + '><span class="casilla"></span><span><b>Día ' + t.dia + ' · ' + esc(t.titulo) + '</b>' + esc(t.tarea.replace(/\{n\}/g, n)) + '</span></li>';
+    }).join('');
+    var r = estado.r, prot = P.PROTOCOLOS[r.problema] || P.PROTOCOLOS.pis;
+    return '<div class="peek">' +
+      '<div class="peek-hero"><span class="avatar">' + D.cara(razaId(), { lengua: true }) + '</span><div><small>Plan de 8 semanas</small><b>' + esc(n) + '</b><div class="peek-bar"><i></i></div></div></div>' +
+      '<div class="peek-tabs">' + [1, 2, 3, 4, 5, 6, 7, 8].map(function (k) { return '<span' + (k === 1 ? ' class="on"' : '') + '>S' + k + '<small>' + (Number(r.edadSemanas) + k - 1) + ' sem.</small></span>'; }).join('') + '</div>' +
+      '<div class="peek-body"><p class="eti-peq">Semana 1 · ' + esc(P.SOCIALIZACION[0].foco) + '</p><ul class="peek-dias">' + dias + '</ul>' +
+      '<div class="peek-prot">' + burbuja(({ pis: 'gota', mordiscos: 'diente', noches: 'luna', solo: 'puerta' })[r.problema] || 'gota', 'peach') + '<span><b>' + esc(prot.titulo) + '</b>' + ((r.problema === 'pis' ? prot.piso : prot.si) || prot.piso).length + ' pasos · tu prioridad</span></div>' +
+      '<div class="peek-candado"><span>' + I('candado') + '56 días, 4 protocolos y la checklist de socialización</span></div></div></div>';
   }
 
   function paywallHtml() {
@@ -448,6 +449,7 @@
   function gracias(conPack) {
     pintarBarra(null);
     var email = estado.email;
+    var respuestas = estado.r;
     lsSet('pc_estado', null);
     pintar('<div class="celebra"><span class="avatar">' + D.cara(razaId(), { lengua: true }) + '<span class="sello">' + I('check') + '</span></span>' +
       '<h1 style="font-size:1.9rem">Empieza el plan de ' + esc(nombre()) + '</h1>' +
@@ -457,8 +459,17 @@
         '<li>' + burbuja('sol', 'butter') + '<div><b>Mañana</b><span>Primer email con la tarea del día.</span></div></li>' +
         '<li>' + burbuja('estrella', 'mint') + '<div><b>Día 7</b><span>Te preguntamos cómo vais para ajustar lo que haga falta.</span></div></li>' +
       '</ul>' +
+      (window.DEMO_VER_PLAN ? '<button class="btn" id="ver-plan">' + I('calendario') + 'Ver el plan de ' + esc(nombre()) + '</button>' : '') +
       '<div class="garantia">' + I('escudo') + '<span>Tienes 14 días de garantía. Si no te sirve, responde a cualquier email y te devolvemos el dinero.</span></div></div>');
+    var vp = document.getElementById('ver-plan');
+    if (vp) vp.onclick = function () { verPlan(respuestas); };
   }
+
+  function verPlan(r) {
+    var html = window.PLAN_HTML.render({ respuestas: r, marca: CONF.marca, id: 'demo', volver: true });
+    document.open(); document.write(html); document.close();
+  }
+  window.verPlanDemo = function () { verPlan(estado.r && estado.r.nombre ? estado.r : { nombre: 'Luna', raza: 'Labrador', razaId: 'labrador', tamano: 'grande', edadSemanas: 10, edadSemanasTexto: '10–11 semanas', vivienda: 'piso', horasSolo: 4, problema: 'mordiscos', convivientes: ['ninos'], primerPerro: 'si', comunidad: 'Comunidad de Madrid', tiene: ['chip'] }); };
 
   // ---------- Router ----------
   function render() {

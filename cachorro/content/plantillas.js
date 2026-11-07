@@ -74,52 +74,139 @@
     2: ['07:30', '19:30']
   };
 
+  // ---------- Rasgos por raza (PENDIENTE DE REVISIÓN por el educador) ----------
+  // energia: baja | media | alta. actividad: el juego del día que más encaja con la raza.
+  // cuidado: precaución física general (sin consejo veterinario).
+  var ACTIVIDADES = {
+    olfato:  { icono: 'huella', txt: 'Juego de olfato 10 minutos: esconde 5 premios por el salón y deja que los busque. A los perros de nariz como {raza} les cansa más que correr.' },
+    pensar:  { icono: 'chispa', txt: 'Juego de pensar 10 minutos: un premio bajo uno de 3 vasos, o un juguete rellenable. {raza} necesita trabajar la cabeza, no solo correr.' },
+    calma:   { icono: 'corazon', txt: 'Rato de mimos y manipulación 5 minutos: cepillo suave, tocar patas y orejas con premio. A {raza} le ayuda a estar tranquilo y a dejarse cuidar.' },
+    buscar:  { icono: 'pelota', txt: 'Juego de "trae" 5 minutos con una pelota blanda, en casa o en un sitio seguro. A {raza} le encanta llevar cosas en la boca: aprovéchalo.' },
+    cuerda:  { icono: 'pelota', txt: 'Juego de tira y afloja suave 5 minutos con una cuerda, con pausas de "suelta". Le enseña a controlar la boca.' }
+  };
+  var RASGOS = {
+    mestizo:          { energia: 'media', actividad: 'olfato' },
+    otra:             { energia: 'media', actividad: 'olfato' },
+    caniche:          { energia: 'media', actividad: 'pensar', nota: 'Los caniches aprenden muy rápido: 2 sesiones cortas al día le cundirán mucho.' },
+    teckel:           { energia: 'media', actividad: 'olfato', cuidado: 'Evita que suba y baje del sofá o la cama de un salto y las escaleras largas: su espalda lo agradecerá. Cógele en brazos con una mano bajo el pecho y otra bajo el culete.' },
+    chihuahua:        { energia: 'media', actividad: 'calma', cuidado: 'Es muy pequeño: cuidado con las caídas desde el sofá o los brazos, y con que le pisen en casa.' },
+    yorkshire:        { energia: 'media', actividad: 'pensar', cuidado: 'Es muy pequeño: cuidado con las caídas y acostúmbrale pronto al cepillado diario.' },
+    bichon:           { energia: 'media', actividad: 'calma', cuidado: 'Su pelo necesita cepillado frecuente: empieza ya con sesiones muy cortas y premios.' },
+    pomerania:        { energia: 'media', actividad: 'pensar', cuidado: 'Es muy pequeño: cuidado con las caídas. Cepillado corto cada día desde ya.' },
+    'shih-tzu':       { energia: 'baja', actividad: 'calma', cuidado: 'Tiene el hocico corto: evita el juego intenso y las horas de calor, y fíjate si respira con dificultad.' },
+    'bulldog-frances':{ energia: 'baja', actividad: 'calma', cuidado: 'Tiene el hocico corto: nada de ejercicio intenso ni paseos en las horas de calor. Si respira muy fuerte, para y descansa.' },
+    'jack-russell':   { energia: 'alta', actividad: 'cuerda', nota: 'Tiene mucha energía: si no la gasta con juego y olfato, la gastará en tus muebles.' },
+    beagle:           { energia: 'media', actividad: 'olfato', nota: 'Su nariz manda: en la calle, siempre con correa en zonas no valladas.' },
+    cocker:           { energia: 'media', actividad: 'buscar', cuidado: 'Revisa y seca sus orejas largas después del paseo, con premio.' },
+    'border-collie':  { energia: 'alta', actividad: 'pensar', nota: 'Es de las razas que más necesitan trabajar la cabeza. Mejor 3 juegos cortos de pensar que un paseo largo.' },
+    'perro-agua':     { energia: 'alta', actividad: 'buscar', cuidado: 'Su pelo rizado se enreda: acostúmbrale pronto a que le toquen y cepillen.' },
+    podenco:          { energia: 'alta', actividad: 'olfato', nota: 'Es cazador de vista y olfato: la llamada ("ven") es su asignatura más importante. En la calle, siempre con correa.' },
+    setter:           { energia: 'alta', actividad: 'olfato', nota: 'Tiene mucha energía y mucha nariz: combina juego de olfato y paseos tranquilos.' },
+    labrador:         { energia: 'alta', actividad: 'buscar', nota: 'Los labradores suelen comer muy rápido: dale parte de la comida en un juguete rellenable.', cuidado: 'Es un perro grande en crecimiento: nada de saltos altos ni carreras largas todavía.' },
+    golden:           { energia: 'alta', actividad: 'buscar', cuidado: 'Es un perro grande en crecimiento: nada de saltos altos ni carreras largas todavía.' },
+    'pastor-aleman':  { energia: 'alta', actividad: 'pensar', cuidado: 'Es un perro grande en crecimiento: nada de saltos altos ni carreras largas todavía.' },
+    husky:            { energia: 'alta', actividad: 'cuerda', nota: 'Es independiente y muy activo: trabaja mucho la llamada y no le sueltes en zonas abiertas.', cuidado: 'Lleva mal el calor: en verano, juego y paseos a primera hora y al anochecer.' }
+  };
+  var JUEGO_MIN = { baja: 5, media: 10, alta: 15 };
+
+  function hhmm(h) { var hh = Math.floor(h), mm = Math.round((h - hh) * 60); if (mm === 60) { hh++; mm = 0; } return (hh < 10 ? '0' : '') + hh + ':' + (mm < 10 ? '0' : '') + mm; }
+  function aHoras(t) { return parseInt(t, 10) + parseInt(t.slice(3), 10) / 60; }
+
   function rutinaDiaria(perfil) {
     var tramo = tramoPorEdad(perfil.edadSemanas);
-    var p = PARAMS[tramo.id][perfil.tamano];
+    var p = PARAMS[tramo.id][perfil.tamano] || PARAMS[tramo.id].mediano;
     var comidas = HORARIOS_COMIDA[p.comidas];
     var jardin = perfil.vivienda === 'jardin';
-    var salida = jardin ? 'Salida al jardín, siempre al mismo rincón' : 'Salida a hacer pis (calle o empapador, según te diga tu veterinario por las vacunas)';
     var n = perfil.nombre || 'tu cachorro';
     var horasSolo = Number(perfil.horasSolo) || 0;
-
-    var bloques = [];
+    var rasgo = RASGOS[perfil.razaId] || RASGOS.mestizo;
+    var nombreRaza = perfil.raza && perfil.razaId !== 'mestizo' && perfil.razaId !== 'otra' ? 'un ' + perfil.raza.toLowerCase() : n;
+    var problema = perfil.problema;
+    var conv = perfil.convivientes || [];
+    var juegoMin = JUEGO_MIN[rasgo.energia];
     var salidaCasa = 9, vuelta = salidaCasa + Math.min(horasSolo, 9);
-    function hhmm(h) { var hh = Math.floor(h), mm = Math.round((h - hh) * 60); return (hh < 10 ? '0' : '') + hh + ':' + (mm < 10 ? '0' : '') + mm; }
-    function fuera(h) { var x = parseInt(h, 10) + parseInt(h.slice(3), 10) / 60; return horasSolo > 0 && x >= salidaCasa && x < vuelta; }
+    var fuera = function (x) { return horasSolo > 0 && x >= salidaCasa && x < vuelta; };
+    var lugarPis = jardin ? 'al jardín, siempre al mismo rincón' : 'a hacer pis (calle o empapador, según te diga tu veterinario por las vacunas)';
+    var bloques = [];
+    function add(h, tipo, txt) { bloques.push({ hora: typeof h === 'number' ? hhmm(h) : h, tipo: tipo, txt: txt }); }
 
-    bloques.push(['07:00', 'Nada más despertar: ' + salida.toLowerCase() + '. Premio en cuanto termine.']);
+    // Momentos fijos de pis
+    var pis = [7];
+    add(7, 'despertar', 'Nada más despertar: salida ' + lugarPis + '. Premio en cuanto termine.');
     comidas.forEach(function (h, i) {
-      var txt = (i === 0 ? 'Desayuno' : 'Comida ' + (i + 1));
-      if (fuera(h)) txt += ': como estarás fuera, déjasela dentro de un juguete rellenable o pide a alguien que se la dé.';
-      else txt += ' en su sitio de siempre. A los 10–15 minutos: salida a hacer pis.';
-      bloques.push([h, txt]);
+      var x = aHoras(h), nombreComida = i === 0 ? 'Desayuno' : 'Comida ' + (i + 1);
+      if (fuera(x)) { add(h, 'comida', nombreComida + ': como estarás fuera, déjasela dentro de un juguete rellenable o pide a alguien que se la dé.'); return; }
+      var extra = conv.indexOf('perros') >= 0 ? ' Que coma separado del otro perro.' : '';
+      add(h, 'comida', nombreComida + ' en su sitio de siempre.' + extra + ' A los 10–15 minutos, salida a hacer pis.');
+      pis.push(x + 0.25);
     });
-    bloques.push(['08:15', 'Juego tranquilo 10 minutos con un mordedor y después siesta en su zona de descanso.']);
+
+    // Juego de mañana según raza y problema
+    var juegoTxt = 'Juego tranquilo ' + juegoMin + ' minutos con un mordedor y después siesta en su zona de descanso.';
+    if (problema === 'mordiscos') juegoTxt = 'Juego ' + juegoMin + ' minutos siempre con un juguete entre tu mano y su boca. Si muerde la mano: quieto, retírala y ofrécele el mordedor. Después, siesta: muchos mordiscos son de sueño.';
+    add(8.25, 'juego', juegoTxt);
+    pis.push(8.5);
+
+    // Ausencia o mañana en casa
     if (horasSolo > 0) {
-      bloques.push([hhmm(salidaCasa), 'Te vas: deja a ' + n + ' en su zona segura con agua, empapador y un juguete rellenable. Salida sin despedidas largas.']);
-      if (horasSolo > p.aguantePis) {
-        bloques.push([hhmm(salidaCasa + horasSolo / 2), 'Con ' + horasSolo + ' h fuera, ' + n + ' no puede aguantar sin hacer pis: el empapador en su zona es imprescindible. Si puedes, que alguien pase a sacarle ahora.']);
-      }
-      bloques.push([hhmm(vuelta), 'Vuelves: saludo tranquilo y salida a hacer pis inmediata, antes de nada más.']);
+      if (problema === 'solo') add(8.75, 'solo', 'Antes de irte: pis, 5 minutos de juego tranquilo y 5 de calma. Prepárale el juguete rellenable que solo tiene cuando te vas.');
+      add(salidaCasa, 'solo', 'Te vas: deja a ' + n + ' en su zona segura con agua, empapador y un juguete rellenable. Salida sin despedidas largas.');
+      if (horasSolo > p.aguantePis) add(salidaCasa + horasSolo / 2, 'pis', 'Con ' + horasSolo + ' h fuera, ' + n + ' no puede aguantar sin hacer pis: el empapador en su zona es imprescindible. Si puedes, que alguien pase a sacarle ahora.');
+      add(vuelta, 'solo', 'Vuelves: saludo tranquilo y salida a hacer pis inmediata, antes de nada más.');
+      pis.push(vuelta);
     } else {
-      bloques.push(['10:30', 'Sesión de 5 minutos: aprender su nombre y "sentado" con premios.']);
-    }
-    bloques.push(['17:00', 'Socialización del día (ver checklist de la semana): ' + p.minPaseo + ' minutos como máximo, sin forzar.']);
-    bloques.push(['18:30', 'Juego activo 10 minutos y siesta. Un cachorro de esta edad necesita dormir ' + p.horasSueno + ' horas al día.']);
-    bloques.push(['22:30', 'Última salida a hacer pis, con calma y sin juego.']);
-    bloques.push(['23:00', 'A dormir en su cama o transportín, cerca de vuestra habitación las primeras semanas.']);
-    if (tramo.id === 't1' || tramo.id === 't2') {
-      bloques.push(['03:00', 'Salida nocturna: sin luces fuertes, sin hablar, sin jugar. Pis y de vuelta a la cama. Esta salida suele dejar de hacer falta hacia las ' + (tramo.id === 't1' ? '14–16' : '16') + ' semanas.']);
+      add(10.5, 'aprender', 'Sesión de 5 minutos: aprender su nombre y "sentado" con premios.');
+      if (problema === 'solo') add(11.25, 'solo', 'Práctica de soledad: sal de la habitación 3 veces, de 30 segundos a 2 minutos, mientras tiene su juguete rellenable. Vuelve antes de que llore.');
     }
 
-    bloques.sort(function (a, b) { return a[0] < b[0] ? -1 : 1; });
+    // Actividad de la raza
+    var act = ACTIVIDADES[rasgo.actividad];
+    var horaAct = horasSolo > 0 ? Math.max(vuelta + 1, 16) : 12.75;
+    add(horaAct, 'raza', act.txt.replace(/(^|\. )\{raza\}/, function (m, p1) { return p1 + nombreRaza.charAt(0).toUpperCase() + nombreRaza.slice(1); }).replace('{raza}', nombreRaza));
+
+    add(17, 'social', 'Socialización del día (checklist de la semana): ' + p.minPaseo + ' minutos como máximo, sin forzar.' + (conv.indexOf('gatos') >= 0 ? ' Hoy, un rato tranquilo cerca del gato con premios.' : ''));
+    pis.push(17.5);
+    if (conv.indexOf('ninos') >= 0) add(18, 'familia', 'Momento con los niños: sentados en el suelo, que le den premios cuando se siente. Sin perseguirle ni cogerle en brazos.');
+    var juegoTarde = 'Juego activo ' + juegoMin + ' minutos y siesta. Un cachorro de esta edad necesita dormir ' + p.horasSueno + ' horas al día.';
+    if (rasgo.energia === 'alta') juegoTarde += ' Aunque tenga mucha energía, la siesta no se negocia.';
+    add(18.5, 'juego', juegoTarde);
+    pis.push(19);
+    if (problema === 'mordiscos') add(19.5, 'mordiscos', 'Mordedor congelado 10 minutos (un trapo húmedo anudado o un juguete de goma del congelador): alivia las encías justo cuando más suele morder.');
+    if (problema === 'pis') add(21, 'pis', 'Repasa la tabla de pis de hoy: apunta dónde y cuándo. En 3 días verás su patrón y podrás adelantarte.');
+    if (problema === 'noches') add(21.5, 'noches', 'Empieza la calma: luces bajas, nada de juego activo y un mordedor tranquilo. Que llegue a la cama con sueño, no excitado.');
+    add(22.5, 'pis', 'Última salida a hacer pis, con calma y sin juego.');
+    pis.push(22.5);
+    add(23, 'dormir', problema === 'noches'
+      ? 'A dormir: su cama o transportín pegado a tu cama, con una prenda con tu olor. Si llora, una mano cerca y voz tranquila; si ya ha hecho pis, no le saques a jugar.'
+      : 'A dormir en su cama o transportín, cerca de vuestra habitación las primeras semanas.');
+    if (tramo.id === 't1' || tramo.id === 't2') add(3, 'noche', 'Salida nocturna: sin luces fuertes, sin hablar, sin jugar. Pis y de vuelta a la cama. Esta salida suele dejar de hacer falta hacia las ' + (tramo.id === 't1' ? '14–16' : '16') + ' semanas.');
+
+    // Salidas extra de pis para no pasar de su aguante (solo cuando hay alguien en casa)
+    pis.sort(function (a, b) { return a - b; });
+    var extras = 0;
+    for (var i = 0; i < pis.length - 1; i++) {
+      var a = pis[i], b = pis[i + 1];
+      while (b - a > p.aguantePis + 0.25) {
+        a += p.aguantePis;
+        var hueco = hhmm(a), mismo = bloques.filter(function (x) { return x.hora === hueco; })[0];
+        if (mismo && !fuera(a)) { mismo.txt = 'Primero, salida a hacer pis. Después: ' + mismo.txt.charAt(0).toLowerCase() + mismo.txt.slice(1); extras++; }
+        else if (!fuera(a) && a < 22) { add(a, 'pis', 'Salida a hacer pis' + (jardin ? ' al jardín' : '') + ', aunque no lo pida. A su edad aguanta unas ' + String(p.aguantePis).replace('.', ',') + ' h.'); extras++; }
+      }
+    }
+
+    bloques.sort(function (x, y) { return x.hora < y.hora ? -1 : x.hora > y.hora ? 1 : 0; });
+    var avisos = [];
+    if (rasgo.cuidado) avisos.push(rasgo.cuidado);
+    if (rasgo.nota) avisos.push(rasgo.nota);
     return {
       tramo: tramo.nombre,
-      tamano: TAMANOS[perfil.tamano].nombre,
+      tamano: TAMANOS[perfil.tamano] ? TAMANOS[perfil.tamano].nombre : 'mediano',
       parametros: p,
-      bloques: bloques,
-      nota: 'Regla de referencia: entre salidas de día, no más de unas ' + p.aguantePis + ' h. Además, saca a ' + n + ' siempre al despertar, después de comer y después de jugar.'
+      energia: rasgo.energia,
+      bloques: bloques.map(function (x) { return [x.hora, x.txt, x.tipo]; }),
+      salidasPis: bloques.filter(function (x) { return /pis/i.test(x.txt) && x.tipo !== 'comida'; }).length + pis.length - extras,
+      avisosRaza: avisos,
+      nota: 'Entre salidas de día, no más de unas ' + String(p.aguantePis).replace('.', ',') + ' h a su edad. Además, saca a ' + n + ' siempre al despertar, después de comer y después de jugar.'
     };
   }
 
@@ -235,7 +322,7 @@
     REVISADO: REVISADO, TAMANOS: TAMANOS, TRAMOS: TRAMOS, PARAMS: PARAMS,
     PROTOCOLOS: PROTOCOLOS, SOCIALIZACION: SOCIALIZACION, SALUD: SALUD, LEGAL: LEGAL,
     COMUNIDADES: COMUNIDADES, PROBLEMAS: PROBLEMAS,
-    tramoPorEdad: tramoPorEdad, rutinaDiaria: rutinaDiaria
+    tramoPorEdad: tramoPorEdad, rutinaDiaria: rutinaDiaria, RASGOS: RASGOS
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.PLANTILLAS = api;
