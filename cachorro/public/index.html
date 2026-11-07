@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>El plan para tu cachorro</title>
+  <meta name="description" content="Un plan de 8 semanas hecho para la raza, la edad y la casa de tu cachorro. Haz el test gratis en 2 minutos.">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="barra">
+    <span class="marca" id="marca">Plan Cachorro</span>
+    <div class="progreso" id="progreso" hidden><div id="progreso-relleno"></div></div>
+  </header>
+
+  <main id="app" aria-live="polite"></main>
+
+  <footer class="pie">
+    <a href="/privacidad">Privacidad</a> · <a href="/condiciones">Condiciones</a> · <span id="pie-contacto"></span>
+  </footer>
+
+  <div class="cookies" id="cookies" hidden>
+    <p>Usamos cookies de medición (Meta) para saber qué anuncios funcionan. Solo si aceptas.</p>
+    <div class="fila">
+      <button class="btn sec" id="cookies-no">Rechazar</button>
+      <button class="btn" id="cookies-si">Aceptar</button>
+    </div>
+  </div>
+
+  <script src="/plantillas.js"></script>
+  <script src="/app.js"></script>
+</body>
+</html>

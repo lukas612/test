@@ -1,0 +1,12 @@
+{
+  "name": "plan-cachorro",
+  "version": "0.1.0",
+  "private": true,
+  "description": "MVP fase 1: landing, test, paywall y entrega manual del plan de cachorro",
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "start": "node server.js",
+    "metricas": "node scripts/metricas.js",
+    "plan": "node scripts/generar-plan.js"
+  }
+}
