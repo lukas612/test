@@ -34,6 +34,34 @@
     { id: 'husky',           nombre: 'Husky',            tamano: 'grande',  fondo: '#d6ecff', base: '#7d8794', claro: '#ffffff', mancha: '#5f6874', orejas: 'erecta', hocico: 1.15, parche: 'husky', ojos: '#5aa9e6' },
     { id: 'otra',            nombre: 'Otra raza',        tamano: null,      fondo: '#eceff4', base: '#d8cfc6', claro: '#f3eee8', mancha: '#b9ad9f', orejas: 'caida', hocico: 1, interrogacion: true }
   ];
+  // Nombres populares y faltas de ortografía habituales → raza dibujada.
+  var ALIAS = {
+    'snauzer': 'schnauzer', 'schnauser': 'schnauzer', 'snautzer': 'schnauzer', 'shnauzer': 'schnauzer', 'schnauzer mini': 'schnauzer', 'schnauzer miniatura': 'schnauzer', 'schnauzer gigante': 'schnauzer',
+    'salchicha': 'teckel', 'perro salchicha': 'teckel', 'dachshund': 'teckel',
+    'yorki': 'yorkshire', 'yorkie': 'yorkshire', 'yorkshire terrier': 'yorkshire',
+    'pomerano': 'pomerania', 'pomeranian': 'pomerania', 'lulu': 'pomerania', 'lulu de pomerania': 'pomerania',
+    'shitzu': 'shih-tzu', 'shih tzu': 'shih-tzu', 'shitsu': 'shih-tzu',
+    'bulldog': 'bulldog-frances', 'bulldog frances': 'bulldog-frances', 'frenchie': 'bulldog-frances',
+    'jack russell terrier': 'jack-russell', 'jack rusell': 'jack-russell',
+    'cocker spaniel': 'cocker', 'cocker ingles': 'cocker',
+    'border': 'border-collie', 'border collie': 'border-collie',
+    'perro de agua': 'perro-agua', 'perro de agua espanol': 'perro-agua',
+    'setter': 'setter', 'setter ingles': 'setter',
+    'labrador retriever': 'labrador', 'golden': 'golden', 'golden retriever': 'golden',
+    'pastor aleman': 'pastor-aleman', 'pastor': 'pastor-aleman',
+    'husky siberiano': 'husky', 'caniche toy': 'caniche', 'poodle': 'caniche',
+    'bichon': 'bichon', 'bichon maltes': 'bichon', 'maltes': 'bichon',
+    'podenco andaluz': 'podenco', 'podenco ibicenco': 'podenco', 'chihuahua': 'chihuahua', 'beagle': 'beagle',
+    'mestiza': 'mestizo', 'cruce': 'mestizo', 'mezcla': 'mestizo', 'no lo se': 'mestizo'
+  };
+  function normaliza(t) { return String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z ]/g, ' ').replace(/\s+/g, ' ').trim(); }
+  function buscar(texto) {
+    var t = normaliza(texto);
+    if (!t) return null;
+    if (ALIAS[t]) return ALIAS[t];
+    for (var i = 0; i < RAZAS.length; i++) if (RAZAS[i].id !== 'otra' && normaliza(RAZAS[i].nombre) === t) return RAZAS[i].id;
+    return null;
+  }
   var porId = {};
   RAZAS.forEach(function (r) { porId[r.id] = r; });
 
@@ -179,7 +207,7 @@
     return '<svg viewBox="0 0 24 24" class="' + (clase || 'ico') + '" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (P[nombre] || '') + '</svg>';
   }
 
-  var api = { RAZAS: RAZAS, raza: function (id) { return porId[id]; }, cara: cara, icono: icono };
+  var api = { RAZAS: RAZAS, raza: function (id) { return porId[id]; }, buscar: buscar, cara: cara, icono: icono };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.PERROS = api;
 })(this);

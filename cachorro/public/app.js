@@ -193,7 +193,7 @@
       html += '<div class="razas">' + D.RAZAS.map(function (r) {
         return '<button class="raza" data-raza="' + r.id + '" aria-pressed="' + (estado.r.razaId === r.id) + '">' + D.cara(r.id) + '<span>' + esc(r.nombre) + '</span></button>';
       }).join('') + '</div>' +
-        '<div class="pila" id="otra-raza"' + (estado.r.razaId === 'otra' ? '' : ' hidden') + '><input type="text" id="campo-raza" maxlength="40" placeholder="Escribe su raza" value="' + esc(estado.r.razaId === 'otra' ? estado.r.raza || '' : '') + '"><button class="btn" id="sig-raza">Continuar</button></div>';
+        '<div class="pila" id="otra-raza"' + (estado.r.razaId === 'otra' ? '' : ' hidden') + '><input type="text" id="campo-raza" maxlength="40" placeholder="Escribe su raza" value="' + esc(estado.r.razaId === 'otra' ? estado.r.raza || '' : '') + '"><p class="hola" id="aviso-raza"></p><button class="btn" id="sig-raza">Continuar</button></div>';
     } else if (q.tipo === 'select') {
       html += '<div class="pila"><select id="campo"><option value="">Elige tu comunidad</option>' + P.COMUNIDADES.map(function (c) { return '<option' + (c === val ? ' selected' : '') + '>' + esc(c) + '</option>'; }).join('') + '</select>' +
         '<button class="btn" id="sig">Continuar</button></div>';
@@ -244,7 +244,20 @@
       });
       campoR.oninput = function () { sigR.disabled = !campoR.value.trim(); };
       campoR.onkeydown = function (e) { if (e.key === 'Enter' && campoR.value.trim()) sigR.click(); };
-      sigR.onclick = function () { estado.r.raza = campoR.value.trim(); avanzar(); };
+      sigR.onclick = function () {
+        var texto = campoR.value.trim(), id = D.buscar(texto);
+        if (id) {
+          // Era una raza que tenemos dibujada, escrita de otra forma: la usamos.
+          var rz = D.raza(id);
+          estado.r.razaId = id; estado.r.raza = rz.nombre;
+          if (rz.tamano) estado.r.tamano = rz.tamano;
+        } else estado.r.raza = texto;
+        avanzar();
+      };
+      campoR.addEventListener('input', function () {
+        var id = D.buscar(campoR.value), aviso = document.getElementById('aviso-raza');
+        if (aviso) aviso.textContent = id ? 'Usaremos el dibujo de ' + D.raza(id).nombre + '.' : '';
+      });
       return;
     }
     if (q.tipo === 'select') {
